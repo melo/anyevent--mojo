@@ -6,7 +6,5 @@ author   'Pedro Melo <melo@cpan.org>';
 
 build_requires 'Test::More';
 
-auto_install;
-
 WriteAll;
 
