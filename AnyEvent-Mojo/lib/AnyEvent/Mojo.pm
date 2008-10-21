@@ -178,12 +178,93 @@ Version 0.1
 
 =head1 SYNOPSIS
 
+    use strict;
+    use warnings;
+    use AnyEvent;
     use AnyEvent::Mojo;
+    
+    my $server = AnyEvent::Mojo->new;
+    $server->port(3456);
+    $server->handler_cb(sub {
+      my ($self, $tx) = @_;
+      
+      # Do whatever you want here
+      $you_mojo_app->handler($tx);
+      
+      return $tx;
+    });
+    
+    # Start it up and keep it running
+    $server->run
+    
+    # integrate with other AnyEvent stuff
+    $server->listen
+    
+    # other AnyEvent stuff here
+    
+    # Run the loop
+    AnyEvent->condvar->recv;
 
-    ...
+
+
+=head1 STATUS
+
+This is a first B<alpha> release. The interface B<will> change, and there is
+still missing funcionality, like keep alive support.
+
+Basic HTTP/1.1 single request per connection works.
+
 
 
 =head1 DESCRIPTION
+
+This module allows you to integrate Mojo applications with the AnyEvent
+framework. For example, you can run a web interface for a long-lived
+AnyEvent daemon.
+
+The AnyEvent::Mojo extends the Mojo::Server class.
+
+To use you need to create a AnyEvent::Mojo object. You can set the port
+with the C< port() > method.
+
+Then set the request callback with the Mojo::Server method, 
+C<handler_cb()>.
+
+This callback will be called on every request. The first parameter is
+the AnyEvent::Mojo server object itself, and the second parameter is a
+Mojo::Transaction.
+
+The code should build the response and return.
+
+For now, the callback is synchronous, so the response must be completed
+when the callback returns. Future versions will lift this restriction.
+
+
+
+=head1 METHODS
+
+
+=head2 new
+
+The constructor. Takes no parameters, returns a server object.
+
+
+=head2 port
+
+Accessor to the port where the server will listen to. Defaults to 3000.
+
+
+=head2 listen
+
+Starts the listening socket.
+
+Returns nothing.
+
+
+=head2 run
+
+Starts the listening socket and kickstarts the
+AnyEvent runloop with a condvar.
 
 
 
