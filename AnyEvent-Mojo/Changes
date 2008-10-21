@@ -1,5 +1,7 @@
 Revision history for AnyEvent-Mojo
 
-0.01    Date/time
-        First version, released on an unsuspecting world.
+0.01    Tue Oct 21 18:00:03 WEST 2008
+         - First working version
+         - Supports HTTP/1.1 without keep-alive
+
 
