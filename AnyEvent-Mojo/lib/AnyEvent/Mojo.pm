@@ -2,6 +2,7 @@ package AnyEvent::Mojo;
 
 use strict;
 use warnings;
+use 5.008;
 use base 'Mojo::Server';
 use Carp qw( croak );
 use AnyEvent;
