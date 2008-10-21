@@ -277,3 +277,6 @@ Pedro Melo, C<< <melo at cpan.org> >>
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2008 Pedro Melo.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
