@@ -2,11 +2,43 @@ package AnyEvent::Mojo;
 
 use strict;
 use warnings;
+use base 'Mojo::Server';
+use Carp 'croak';
+use AnyEvent;
+use AnyEvent::Socket;
 
 our $VERSION = '0.1';
 
 
+__PACKAGE__->attr('port',  chained => 1, default => 3000);
+__PACKAGE__->attr('alive', chained => 1);
 
+
+sub listen {
+  my $self = shift;
+  
+  tcp_server undef, $self->port, sub {
+    my ($fh) = @_
+        or die "Connect failed: $!";
+
+    # ... deal with connection
+  }, sub {
+    my ($fh, $thishost, $thisport) = @_;
+    
+    print "Server available at http://$thishost:$thisport/\n";
+  };
+}
+
+sub run {
+  my $self = shift;
+  
+  $self->listen;
+  
+  my $cv = AnyEvent->condvar;
+  $self->alive($cv);
+  
+  $cv->recv;
+}
 
 
 42; # End of AnyEvent::Mojo
