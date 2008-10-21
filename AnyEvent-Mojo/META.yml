@@ -1,7 +1,7 @@
 ---
-abstract: 'The great new AnyEvent::Mojo!'
+abstract: 'Run Mojo apps using AnyEvent framework'
 author:
-  - 'Pedro Melo <melo@cpan.org>'
+  - 'Pedro Melo, C<< <melo at cpan.org> >>'
 build_requires:
   Test::More: 0
 distribution_type: module
@@ -15,6 +15,14 @@ no_index:
   directory:
     - inc
     - t
+requires:
+  AnyEvent: 0
+  AnyEvent::Handle: 0
+  AnyEvent::Socket: 0
+  Carp: 0
+  Mojo: 0.07
+  perl: 5.8.0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.01
+  repository: http://github.com/melo/anyevent--mojo/
+version: 0.1
