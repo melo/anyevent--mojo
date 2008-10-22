@@ -24,7 +24,7 @@ sub listen {
       my ($fh) = @_;
       
       if (!$fh) {
-        print STDERR "Connect failed: $!\n";
+        $self->log("Connect failed: $!");
         return;
       }
       
