@@ -11,6 +11,8 @@ requires 'AnyEvent::Handle' => '0';
 requires 'Carp'             => '0';
 
 build_requires 'Test::More';
+build_requires 'Test::Exception';
+build_requires 'AnyEvent::HTTP';
 
 WriteAll;
 
