@@ -47,9 +47,9 @@ sub listen {
     
     # Startup phase
     sub {
-      my ($fh, $thishost, $thisport) = @_;
+      shift;
       
-      print "Server available at http://$thishost:$thisport/\n";
+      $self->startup_banner(@_);
     }
   );
 }
@@ -63,6 +63,12 @@ sub run {
   $self->alive($cv);
   
   $cv->recv;
+}
+
+sub startup_banner {
+  my ($self, $thishost, $thisport) = @_;
+  
+  "Server available at http://$thishost:$thisport/\n";
 }
 
 
@@ -266,6 +272,33 @@ Returns nothing.
 
 Starts the listening socket and kickstarts the
 AnyEvent runloop with a condvar.
+
+
+=head2 startup_banner
+
+Called after the listening socket is started. You can override this method
+on your L< AnyEvent::Mojo > subclasses to setup other components.
+
+The default C< startup_banner > prints the URL where the server
+is listening to requests.
+
+This method receives two parameters:
+
+
+=over 4
+
+=item $host
+
+The hostname where the server is binded to. By default the server binds to all
+addresses, and this value is C< 0.0.0.0 >.
+
+
+=item $port
+
+The port number.
+
+
+=back
 
 
 

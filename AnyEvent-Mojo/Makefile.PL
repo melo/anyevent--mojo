@@ -12,6 +12,7 @@ requires 'Carp'             => '0';
 
 build_requires 'Test::More';
 build_requires 'Test::Exception';
+build_requires 'Test::Deep';
 build_requires 'AnyEvent::HTTP';
 
 WriteAll;
