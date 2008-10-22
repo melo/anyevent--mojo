@@ -11,7 +11,7 @@ __PACKAGE__->attr('server',    chained => 1, weak => 1);
 __PACKAGE__->attr('sock',      chained => 1);
 __PACKAGE__->attr('peer_host', chained => 1);
 __PACKAGE__->attr('peer_port', chained => 1);
-__PACKAGE__->attr('timeout',   chained => 1, default => 15);
+__PACKAGE__->attr('timeout',   chained => 1, default => 5);
 
 __PACKAGE__->attr('tx',        chained => 1);
 __PACKAGE__->attr('handle',    chained => 1);
