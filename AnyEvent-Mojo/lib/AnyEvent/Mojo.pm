@@ -11,8 +11,9 @@ use AnyEvent::Mojo::Connection;
 
 our $VERSION = '0.1';
 
-__PACKAGE__->attr('port',  chained => 1, default => 3000);
-__PACKAGE__->attr('alive', chained => 1);
+__PACKAGE__->attr('port',         chained => 1, default => 3000);
+__PACKAGE__->attr('run_guard',    chained => 1);
+__PACKAGE__->attr('listen_guard', chained => 1);
 __PACKAGE__->attr('connection_class',
    chained => 1,
    default => 'AnyEvent::Mojo::Connection'
@@ -22,7 +23,10 @@ __PACKAGE__->attr('connection_class',
 sub listen {
   my $self = shift;
   
-  tcp_server(undef, $self->port,
+  # Already listening
+  return if $self->listen_guard;
+  
+  my $guard = tcp_server(undef, $self->port,
     # on connection
     sub {
       my ($sock, $peer_host, $peer_port) = @_;
@@ -48,17 +52,40 @@ sub listen {
       $self->startup_banner(@_);
     }
   );
+  $self->listen_guard(sub { $guard = undef });
+  
+  return;
 }
 
 sub run {
   my $self = shift;
   
+  # Start the server socket
   $self->listen;
   
+  # Create a run guard
   my $cv = AnyEvent->condvar;
-  $self->alive($cv);
-  
+  $self->run_guard(sub { $cv->send });
+
   $cv->recv;
+  
+  return;
+}
+
+sub stop {
+  my ($self) = @_;
+  
+  # Clears the listening guard, closes the listening socket
+  if (my $cb = $self->listen_guard) {
+    $cb->();
+    $self->listen_guard(undef);
+  }
+  
+  # Clear the run() guard
+  if (my $cb = $self->run_guard) {
+    $cb->();
+    $self->run_guard(undef);
+  }
 }
 
 sub startup_banner {
@@ -174,7 +201,13 @@ Returns nothing.
 =head2 run
 
 Starts the listening socket and kickstarts the
-AnyEvent runloop with a condvar.
+L< AnyEvent > runloop.
+
+
+=head2 stop
+
+Closes the listening socket and stops the runloop initiated by a call to
+C< run() >.
 
 
 =head2 startup_banner

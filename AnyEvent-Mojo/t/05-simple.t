@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 9;
+use Test::More tests => 11;
 use Test::Exception;
 use Test::Deep;
 use AnyEvent::HTTP;
@@ -23,9 +23,6 @@ is($server->port, $new_port, 'Port change sucessful');
 lives_ok sub { $server->listen }, 'Server started ok';
 cmp_deeply($server->banner_called, [ '0.0.0.0', $new_port ]);
 
-# Trigger to stop the tests
-my $stop = AnyEvent->condvar;
-
 # GET the server
 my $timer; $timer = AnyEvent->timer( after => .5, cb => sub {
   http_get("http://0.0.0.0:$new_port/", sub {
@@ -38,12 +35,15 @@ my $timer; $timer = AnyEvent->timer( after => .5, cb => sub {
       'Content matches expected result'
     );
     
-    $stop->send;
+    lives_ok sub { $server->stop };
   });
 });
 
 # Run the tests
-$stop->recv;
+$server->run;
+
+lives_ok sub { $server->stop }, 'Second call to stop is harmless';
+
 
 package MyTestServer;
 
