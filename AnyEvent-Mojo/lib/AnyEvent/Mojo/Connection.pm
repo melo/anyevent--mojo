@@ -32,9 +32,9 @@ sub run {
   my $handle = AnyEvent::Handle->new(
     fh         => $self->sock,
     timeout    => $self->timeout,
-    on_eof     => sub { $self->close },
-    on_error   => sub { $self->close },
-    on_timeout => sub { $self->close },
+    on_eof     => sub { $self->close('eof')     },
+    on_error   => sub { $self->close('error')   },
+    on_timeout => sub { $self->close('timeout') },
   );
   $self->handle($handle);
 
