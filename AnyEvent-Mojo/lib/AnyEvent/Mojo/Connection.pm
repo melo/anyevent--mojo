@@ -13,7 +13,7 @@ __PACKAGE__->attr('peer_host', chained => 1);
 __PACKAGE__->attr('peer_port', chained => 1);
 __PACKAGE__->attr('timeout',   chained => 1, default => 5);
 
-__PACKAGE__->attr('tx',        chained => 1, weak => 1);
+__PACKAGE__->attr('tx',        chained => 1);
 __PACKAGE__->attr('handle',    chained => 1);
 
 
@@ -23,8 +23,6 @@ sub run {
   
   # Create the initial transaction
   my $tx = $srv->build_tx_cb->($srv)->state('read');
-  # Not a cycle because ->tx weakens the $tx ref
-  $tx->connection($self);
   $self->tx($tx);
   
   # Keep it simple, no keep-alive for now
