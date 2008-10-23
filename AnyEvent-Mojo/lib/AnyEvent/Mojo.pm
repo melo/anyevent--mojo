@@ -91,7 +91,7 @@ sub stop {
 sub startup_banner {
   my ($self, $thishost, $thisport) = @_;
   
-  "Server available at http://$thishost:$thisport/\n";
+  print "Server available at http://$thishost:$thisport/\n";
 }
 
 
