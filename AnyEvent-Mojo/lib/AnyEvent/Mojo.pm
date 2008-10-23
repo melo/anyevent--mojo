@@ -44,15 +44,10 @@ sub listen {
         server    => $self,
       )->run;
     },
-    
-    # Startup phase
-    sub {
-      shift;
-      
-      $self->startup_banner(@_);
-    }
   );
+  
   $self->listen_guard(sub { $guard = undef });
+  $self->startup_banner;
   
   return;
 }
@@ -212,7 +207,7 @@ C< run() >.
 
 =head2 startup_banner
 
-Called just before the listening socket is started. You can override this method
+Called after the listening socket is started. You can override this method
 on your L< AnyEvent::Mojo > subclasses to setup other components.
 
 The default C< startup_banner > prints the URL where the server
