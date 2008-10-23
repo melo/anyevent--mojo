@@ -2,10 +2,11 @@
 
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::Exception;
 use Test::Deep;
 use AnyEvent::HTTP;
+use IO::Socket qw( SOMAXCONN );
 
 BEGIN {
 	use_ok( 'AnyEvent::Mojo' );
@@ -14,6 +15,7 @@ BEGIN {
 my $server = MyTestServer->new;
 isa_ok($server, 'Mojo::Server');
 is($server->port, 3000, 'Expected default port');
+is($server->listen_queue_size, SOMAXCONN, 'Expected default port');
 ok(!defined($server->banner_called), 'Server not up yet');
 
 my $new_port = 4000 + $$ % 10000;

@@ -8,15 +8,20 @@ use Carp qw( croak );
 use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::Mojo::Connection;
+use IO::Socket qw( SOMAXCONN );
 
 our $VERSION = '0.1';
 
 __PACKAGE__->attr('port',         chained => 1, default => 3000);
+__PACKAGE__->attr('listen_queue_size',
+    chained => 1,
+    default => sub { SOMAXCONN },
+);
 __PACKAGE__->attr('run_guard',    chained => 1);
 __PACKAGE__->attr('listen_guard', chained => 1);
 __PACKAGE__->attr('connection_class',
-   chained => 1,
-   default => 'AnyEvent::Mojo::Connection'
+    chained => 1,
+    default => 'AnyEvent::Mojo::Connection'
 );
 
 
@@ -44,6 +49,9 @@ sub listen {
         server    => $self,
       )->run;
     },
+    
+    # Setup listen queue size
+    sub { return $self->listen_queue_size }
   );
   
   $self->listen_guard(sub { $guard = undef });
@@ -116,7 +124,7 @@ Version 0.1
     use AnyEvent::Mojo;
     
     my $server = AnyEvent::Mojo->new;
-    $server->port(3456);
+    $server->port(3456)->listen_queue_size(10);
     $server->handler_cb(sub {
       my ($self, $tx) = @_;
       
@@ -184,6 +192,17 @@ The constructor. Takes no parameters, returns a server object.
 =head2 port
 
 Accessor to the port where the server will listen to. Defaults to 3000.
+
+
+=head2 listen_queue_size
+
+Defines the size of the listening queue. Defaults to C< SOMAXCONN >.
+
+Use
+
+    perl -MSocket -e 'print Socket::SOMAXCONN,"\n"'
+
+to discover the default for your operating system.
 
 
 =head2 listen
