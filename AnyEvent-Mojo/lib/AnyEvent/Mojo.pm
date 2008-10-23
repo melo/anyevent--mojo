@@ -13,6 +13,7 @@ use IO::Socket qw( SOMAXCONN );
 our $VERSION = '0.1';
 
 __PACKAGE__->attr('port',         chained => 1, default => 3000);
+__PACKAGE__->attr('host',         chained => 1);
 __PACKAGE__->attr('listen_queue_size',
     chained => 1,
     default => sub { SOMAXCONN },
@@ -50,8 +51,12 @@ sub listen {
       )->run;
     },
     
-    # Setup listen queue size
-    sub { return $self->listen_queue_size }
+    # Setup listen queue size, record our hostname and port
+    sub {
+      $self->host($_[1])->port($_[2]);
+      
+      return $self->listen_queue_size;
+    }
   );
   
   $self->listen_guard(sub { $guard = undef });
@@ -92,9 +97,10 @@ sub stop {
 }
 
 sub startup_banner {
-  my ($self, $thishost, $thisport) = @_;
+  my $self = shift;
+  my ($host, $port) = ($self->host, $self->port);
   
-  print "Server available at http://$thishost:$thisport/\n";
+  print "Server available at http://$host:$port/\n";
 }
 
 
@@ -189,9 +195,14 @@ when the callback returns. Future versions will lift this restriction.
 The constructor. Takes no parameters, returns a server object.
 
 
+=head2 host
+
+Address where the server is listening to client requests.
+
+
 =head2 port
 
-Accessor to the port where the server will listen to. Defaults to 3000.
+Port where the server will listen to. Defaults to 3000.
 
 
 =head2 listen_queue_size
@@ -231,24 +242,6 @@ on your L< AnyEvent::Mojo > subclasses to setup other components.
 
 The default C< startup_banner > prints the URL where the server
 is listening to requests.
-
-This method receives two parameters:
-
-
-=over 4
-
-=item $host
-
-The hostname where the server is binded to. By default the server binds to all
-addresses, and this value is C< 0.0.0.0 >.
-
-
-=item $port
-
-The port number.
-
-
-=back
 
 
 

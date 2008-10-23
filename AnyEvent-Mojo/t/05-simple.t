@@ -60,7 +60,7 @@ BEGIN {
 sub startup_banner {
   my $self = shift;
   
-  $self->banner_called(@_);
+  $self->banner_called($self->host, $self->port);
   return $self->SUPER::startup_banner(@_);
 }
 
