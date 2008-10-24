@@ -18,6 +18,16 @@ __PACKAGE__->attr('listen_queue_size',
     chained => 1,
     default => sub { SOMAXCONN },
 );
+__PACKAGE__->attr('max_keep_alive_requests',
+  chained => 1,
+  default => 100,
+);
+__PACKAGE__->attr('keep_alive_timeout',
+  chained => 1,
+  default => 5,
+);
+__PACKAGE__->attr('request_count', chained => 1, default => 0);
+
 __PACKAGE__->attr('run_guard',    chained => 1);
 __PACKAGE__->attr('listen_guard', chained => 1);
 __PACKAGE__->attr('connection_class',
@@ -48,6 +58,7 @@ sub listen {
         peer_host => $peer_host,
         peer_port => $peer_port,
         server    => $self,
+        timeout   => $self->keep_alive_timeout,
       )->run;
     },
     
