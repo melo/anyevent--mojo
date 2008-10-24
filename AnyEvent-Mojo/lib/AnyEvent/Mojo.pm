@@ -79,6 +79,8 @@ sub listen {
 sub run {
   my $self = shift;
   
+  $SIG{PIPE} = 'IGNORE';
+  
   # Start the server socket
   $self->listen;
   
