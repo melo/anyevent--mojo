@@ -1,5 +1,13 @@
 Revision history for AnyEvent-Mojo
 
+0.02    Sat Oct 25 13:31:38 WEST 2008
+         - Added support for keep-alive requests to Connection (Pedro Melo)
+         - Make sure we don't die on SIGPIPE's (Pedro Melo)
+         - The startup banner is printed after the sucessful startup of the server now (Pedro Melo)
+         - Default timeout reduced to 5 seconds (Pedro Melo)
+         - Added stop() method to stop a server (Pedro Melo)
+         - Improve documentation and tests (Pedro Melo)
+
 0.01    Tue Oct 21 18:00:03 WEST 2008
          - First working version
          - Supports HTTP/1.1 without keep-alive
