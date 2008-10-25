@@ -346,7 +346,18 @@ client socket.
 
 =head2 request_count
 
-Returns the total request count for the connection.
+Returns the total request count for the connection. In case of keep-alive
+requests, the request count grows beyond 1. 
+
+
+=head2 peer_host
+
+Returns the IP address of the peer host.
+
+
+=head2 peer_port
+
+Returns the TCP port number of the peer host.
 
 
 =head1 AUTHOR
