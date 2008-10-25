@@ -362,10 +362,14 @@ Returns the TCP port number of the peer host.
 
 =head1 AUTHOR
 
-Pedro Melo, C<< <melo at evolui.com> >>
+Pedro Melo, C<< <melo at cpan.org> >>
 
 
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 EVOLUI.COM.
+Copyright 2008 Pedro Melo.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
