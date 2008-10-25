@@ -144,11 +144,18 @@ Version 0.1
     
     my $server = AnyEvent::Mojo->new;
     $server->port(3456)->listen_queue_size(10);
+    $server->max_keep_alive_requests(100)->keep_alive_timeout(3);
+    
     $server->handler_cb(sub {
       my ($self, $tx) = @_;
       
       # Do whatever you want here
       $you_mojo_app->handler($tx);
+
+      # Cool stats
+      $tx->res->headers(
+        'X-AnyEvent-Mojo-Request-Count' =>  $server->request_count
+      );
       
       return $tx;
     });
@@ -163,7 +170,9 @@ Version 0.1
     
     # Run the loop
     AnyEvent->condvar->recv;
-
+    
+    # Advanced usage: use your own Connection class
+    $server->connection_class('MyConnectionClass');
 
 
 =head1 STATUS
@@ -227,6 +236,33 @@ Use
     perl -MSocket -e 'print Socket::SOMAXCONN,"\n"'
 
 to discover the default for your operating system.
+
+
+=head2 max_keep_alive_requests
+
+Number of requests that each connection will allow in keep-alive mode.
+
+Use 0 for unlimited requests. Default is 100 requests.
+
+
+=head2 keep_alive_timeout
+
+Number of seconds (can be fractional) that the server lets open connections
+stay idle.
+
+Default is 5 seconds.
+
+
+=head2 request_count
+
+Returns the number of requests the server has answered since it started.
+
+
+=head2 connection_class
+
+Sets the class name that will be used to process each connection.
+
+Defaults to L< AnyEvent::Mojo::Connection >.
 
 
 =head2 listen
