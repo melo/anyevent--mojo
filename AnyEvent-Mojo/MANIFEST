@@ -5,6 +5,7 @@ README
 lib/AnyEvent/Mojo.pm
 t/00-load.t
 t/05-simple.t
+t/10-keep-alive.t
 t/pod-coverage.t
 t/pod.t
 .gitignore

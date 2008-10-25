@@ -13,6 +13,8 @@ __PACKAGE__->attr('peer_host', chained => 1);
 __PACKAGE__->attr('peer_port', chained => 1);
 __PACKAGE__->attr('timeout',   chained => 1, default => 5);
 
+__PACKAGE__->attr('request_count', chained => 1, default => 0);
+
 __PACKAGE__->attr('tx',        chained => 1);
 __PACKAGE__->attr('handle',    chained => 1);
 
@@ -21,13 +23,6 @@ sub run {
   my $self = shift;
   my $srv  = $self->server;
   
-  # Create the initial transaction
-  my $tx = $srv->build_tx_cb->($srv)->state('read');
-  $self->tx($tx);
-  
-  # Keep it simple, no keep-alive for now
-  $tx->res->headers->connection('close');
-
   # Create out magic handler_cb
   my $handle = AnyEvent::Handle->new(
     fh         => $self->sock,
@@ -38,7 +33,7 @@ sub run {
   );
   $self->handle($handle);
 
-  $handle->push_read(sub { $self->_read(@_) });
+  $self->_ready_for_transaction;
   
   return;
 }
@@ -51,24 +46,96 @@ sub close {
 }
 
 
+######################
+# Transaction handling
+
+sub _ready_for_transaction {
+  my $self = shift;
+  
+  $self->handle->push_read(sub { $self->_read(@_) });
+  
+  return;
+}
+
+sub _current_transaction {
+  my $self = shift;
+  my $tx   = $self->tx;
+  
+  # Initial request, prepare transaction
+  if (!$tx) {
+    my $srv  = $self->server;
+    $tx = $srv->build_tx_cb->($srv)->state('read');
+    $self->tx($tx);
+    $tx->connection($self);
+  }
+  
+  return $tx;
+}
+
+sub _last_transaction {
+  my $self = shift;
+  
+  $self->tx->res->headers->connection('Close');
+  
+  return;
+}
+
+sub _end_transaction {
+  my ($self) = @_;
+  my $handle = $self->handle;
+  my $tx     = $self->tx;
+  my $ka     = $tx->keep_alive;  
+
+  # Destroy current tx
+  $self->tx(undef);
+
+  if ($ka) {
+    $self->_ready_for_transaction;
+  }
+  else {
+    $self->close;
+  }
+  
+  return;
+}
+
 
 ##############
 # Read request
 
 sub _read {
   my ($self, $handle) = @_;
-  my $srv = $self->server;
-  my $tx  = $self->tx;
-  my $req = $tx->request;
-  
+
   return unless defined $handle->{rbuf};
-  
+
+  my $tx  = $self->_current_transaction;
+  my $req = $tx->request;
   $req->parse(delete $handle->{rbuf});
 
   my $done = $req->is_state(qw/done error/);
+  # FIXME: we should take care of error differently
   if ($done) {
+    my $srv = $self->server;
+
+    # Check to see if this is our last request
+    $srv->request_count($srv->request_count + 1);
+    my $max_keep_alive_requests = $srv->max_keep_alive_requests;
+    my $count = $self->request_count + 1;
+    $self->request_count($count);
+
+    if ($max_keep_alive_requests && $count >= $max_keep_alive_requests) {
+      $self->_last_transaction('max-keep-alive');
+    }
+    
     $tx->state('write');
     $srv->handler_cb->($srv, $tx);
+    
+    # TODO: automatic content-length generation? is this a good idea?
+    #       without content_length, keep-alive must be off
+    # 
+    # unless ($tx->res->headers->content_length) {
+    #   $tx->res->headers->content_length($tx->res->body_length);
+    # }
     
     $self->_write;
   }
@@ -94,8 +161,8 @@ sub _write_more {
 
   if (my $done = $self->_tx_state_machine_adv) {
     $handle->on_drain(undef);
-    # No keep-alives
-    $self->close;
+    $self->_end_transaction;
+
     return;
   }
   
@@ -106,26 +173,41 @@ sub _write_more {
 sub _tx_state_machine_adv {
   my ($self) = @_;
   my $tx   = $self->tx;
+  my $res  = $tx->res;
   my $done = 0;
   
   # Advance Mojo state machine
   if ($tx->is_state('write')) {
     $tx->state('write_start_line');
-    $tx->{_to_write} = $tx->res->start_line_length;
+    $tx->{_to_write} = $res->start_line_length;
   }
 
   # Response start line
   if ($tx->is_state('write_start_line') && $tx->{_to_write} <= 0) {
     $tx->state('write_headers');
+
+    # No content-length, no keep-alive
+    $self->_last_transaction('no-content-length') unless $res->headers->content_length;
+    
+    # Connection header
+    unless ($res->headers->connection) {
+      if ($tx->keep_alive) {
+        $res->headers->connection('Keep-Alive');
+      }
+      else {
+        $res->headers->connection('Close');
+      }
+    }
+    
     $tx->{_offset} = 0;
-    $tx->{_to_write} = $tx->res->header_length;
+    $tx->{_to_write} = $res->header_length;
   }
 
   # Response headers
   if ($tx->is_state('write_headers') && $tx->{_to_write} <= 0) {
     $tx->state('write_body');
     $tx->{_offset} = 0;
-    $tx->{_to_write} = $tx->res->body_length;
+    $tx->{_to_write} = $res->body_length;
   }
 
   # Response body
@@ -261,6 +343,10 @@ The C< close() > method clears the current transaction, destroys the
 L< AnyEvent::Handle > associated with this connection and closes the
 client socket.
 
+
+=head2 request_count
+
+Returns the total request count for the connection.
 
 
 =head1 AUTHOR
