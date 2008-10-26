@@ -118,9 +118,9 @@ sub _read {
     my $srv = $self->server;
 
     # Check to see if this is our last request
-    $srv->request_count($srv->request_count + 1);
+    $srv->request_count(($srv->request_count || 0) + 1);
     my $max_keep_alive_requests = $srv->max_keep_alive_requests;
-    my $count = $self->request_count + 1;
+    my $count = ($self->request_count || 0) + 1;
     $self->request_count($count);
 
     if ($max_keep_alive_requests && $count >= $max_keep_alive_requests) {
