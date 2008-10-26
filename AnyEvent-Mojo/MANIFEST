@@ -9,6 +9,7 @@ t/05-simple.t
 t/10-keep-alive.t
 t/pod-coverage.t
 t/pod.t
+t/tlib/MyTestServer.pm
 .gitignore
 inc/Module/Install.pm
 inc/Module/Install/Base.pm

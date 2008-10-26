@@ -1,5 +1,9 @@
 Revision history for AnyEvent-Mojo
 
+0.03    Sun Oct 26 20:38:44 WET 2008
+         - Move the test server, MyTestServer, to a tlib directory (Pedro Melo)
+         - Cope with Mojo 0.07 (Pedro Melo)
+
 0.02    Sat Oct 25 13:31:38 WEST 2008
          - Added support for keep-alive requests to Connection (Pedro Melo)
          - Make sure we don't die on SIGPIPE's (Pedro Melo)
