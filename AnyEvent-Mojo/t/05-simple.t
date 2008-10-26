@@ -7,9 +7,10 @@ use Test::Exception;
 use Test::Deep;
 use AnyEvent::HTTP;
 use IO::Socket qw( SOMAXCONN );
+use lib 't/tlib';
 
 BEGIN {
-	use_ok( 'AnyEvent::Mojo' );
+	use_ok( 'MyTestServer' );
 }
 
 my $server = MyTestServer->new;
@@ -46,22 +47,3 @@ $server->run;
 
 lives_ok sub { $server->stop }, 'Second call to stop is harmless';
 
-
-package MyTestServer;
-
-use strict;
-use warnings;
-use base 'AnyEvent::Mojo';
-
-BEGIN {
-  __PACKAGE__->attr('banner_called');
-}
-
-sub startup_banner {
-  my $self = shift;
-  
-  $self->banner_called($self->host, $self->port);
-  return $self->SUPER::startup_banner(@_);
-}
-
-1;
