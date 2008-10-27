@@ -1,5 +1,8 @@
 Revision history for AnyEvent-Mojo
 
+0.04    Mon Oct 27 08:26:37 WET 2008
+         - Brown-paper-bag mistake: wrong Mojo version required (Pedro Melo)
+
 0.03    Sun Oct 26 20:38:44 WET 2008
          - Move the test server, MyTestServer, to a tlib directory (Pedro Melo)
          - Cope with Mojo 0.07 (Pedro Melo)

@@ -10,7 +10,7 @@ use AnyEvent::Socket;
 use AnyEvent::Mojo::Connection;
 use IO::Socket qw( SOMAXCONN );
 
-our $VERSION = '0.3';
+our $VERSION = '0.4';
 
 __PACKAGE__->attr('port',         chained => 1, default => 3000);
 __PACKAGE__->attr('host',         chained => 1);
