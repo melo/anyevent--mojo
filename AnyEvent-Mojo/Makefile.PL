@@ -4,7 +4,7 @@ name     'AnyEvent-Mojo';
 all_from 'lib/AnyEvent/Mojo.pm';
 repository 'http://github.com/melo/anyevent--mojo/';
 
-requires 'Mojo'             => '0.07';
+requires 'Mojo'             => '0.7';
 requires 'AnyEvent'         => '0';
 requires 'AnyEvent::Socket' => '0';
 requires 'AnyEvent::Handle' => '0';
