@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use base 'Mojo::Base';
 use AnyEvent::Handle;
+use Carp;
 
 our $VERSION = '0.1';
 
@@ -43,6 +44,35 @@ sub close {
   
   $self->tx(undef)->handle(undef);
   close($self->sock);
+}
+
+
+##########################################
+# Pause/restart processing of transactions
+
+sub pause {
+  my ($self) = @_;
+  my $tx = $self->tx;
+  
+  croak("pause() only works on tx's in the 'write' state")
+    unless $tx && $tx->is_state('write');
+  
+  $self->tx->state('paused');
+  
+  return sub { $self->resume };
+}
+
+sub resume {
+  my ($self) = @_;
+  my $tx = $self->tx;
+
+  croak("resume() only works on tx's in the 'paused' state")
+    unless $tx && $tx->is_state('paused');
+  
+  $self->tx->state('write');
+  $self->_write;
+  
+  return;
 }
 
 
@@ -130,7 +160,7 @@ sub _read {
     $tx->state('write');
     $srv->handler_cb->($srv, $tx);
     
-    $self->_write;
+    $self->_write if $tx->is_state('write');
   }
   
   return $done;
@@ -348,6 +378,67 @@ Returns the IP address of the peer host.
 =head2 peer_port
 
 Returns the TCP port number of the peer host.
+
+
+=head1 ASYNCHRONOUS PROCESSING
+
+While in the middle of a request, an application can pause the current
+transaction, do something else (including dealing with other requests)
+and then resume the processing.
+
+To do that, you application must call the C<$tx->connection->pause()> method.
+
+When you are ready to send back the response, call
+C<$tx->connection->resume()>.
+
+For example:
+
+    # inside your response handler of you Mojo::App
+    $tx->connection->pause();
+    
+    # Call webservice and deal with result
+    http_get 'http://my.webservice.endpoint/api', sub {
+      my ($data) = @_;
+      
+      $tx->response->body("Webservice returned this: '$data'");
+      $tx->connection->resume();
+    };
+
+To make it easier to resume later, the C<pause()> method returns a coderef
+that will resume the transaction when called. So the code above could be
+written like this:
+
+    # inside your response handler of you Mojo::App
+    my $resume_cb = $tx->connection->pause();
+    
+    # Call webservice and deal with result
+    http_get 'http://my.webservice.endpoint/api', sub {
+      my ($data) = @_;
+      
+      $tx->response->body("Webservice returned this: '$data'");
+      $resume_cb->();
+    };
+
+
+
+=head2 pause()
+
+Pauses the current transaction.
+
+The transaction state must be C<write>, that is, before sending any status
+or header responses.
+
+Returns a coderef that, when called, will resume the transaction.
+
+
+=head2 resume()
+
+Resumes a paused transaction.
+
+The response must be complete and we will immediatly start sending the data
+to the client.
+
+Returns nothing.
 
 
 =head1 AUTHOR
