@@ -91,7 +91,6 @@ sub start_server {
        . "\ntotal_req: "         . $conn->server->request_count;
     
     $res->body($body);
-    $res->headers->content_length(length($body));
     
     return;
   });

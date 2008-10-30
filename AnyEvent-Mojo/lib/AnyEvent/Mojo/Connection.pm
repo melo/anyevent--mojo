@@ -130,13 +130,6 @@ sub _read {
     $tx->state('write');
     $srv->handler_cb->($srv, $tx);
     
-    # TODO: automatic content-length generation? is this a good idea?
-    #       without content_length, keep-alive must be off
-    # 
-    # unless ($tx->res->headers->content_length) {
-    #   $tx->res->headers->content_length($tx->res->body_length);
-    # }
-    
     $self->_write;
   }
   
@@ -186,9 +179,6 @@ sub _tx_state_machine_adv {
   if ($tx->is_state('write_start_line') && $tx->{_to_write} <= 0) {
     $tx->state('write_headers');
 
-    # No content-length, no keep-alive
-    $self->_last_transaction('no-content-length') unless $res->headers->content_length;
-    
     # Connection header
     unless ($res->headers->connection) {
       if ($tx->keep_alive) {
