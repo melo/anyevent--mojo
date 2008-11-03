@@ -11,7 +11,7 @@ eval { require AnyEvent::HTTP; };
 plan skip_all => 'Pause/Resume tests require the AnyEvent::HTTP module'
   if $@;
 
-plan tests => 83;
+plan tests => 23;
 
 my $port = 4000 + $$ % 10000;
 my $pid = start_server($port);
