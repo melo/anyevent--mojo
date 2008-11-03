@@ -24,7 +24,7 @@ requires:
   AnyEvent::Socket: 0
   Carp: 0
   IO::Socket: 0
-  Mojo: 0.7
+  Mojo: 0
   perl: 5.8.0
 resources:
   license: http://dev.perl.org/licenses/
