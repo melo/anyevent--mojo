@@ -23,7 +23,10 @@ my $stop = AnyEvent->condvar;
 
 # It's my server, I'm evil
 my $conns = 10;
-$AnyEvent::HTTP::MAX_PER_HOST = $conns;
+{
+  no warnings;
+  $AnyEvent::HTTP::MAX_PER_HOST = $conns;
+}
 
 my $now = time;
 my $count;
