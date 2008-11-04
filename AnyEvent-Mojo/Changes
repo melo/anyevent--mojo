@@ -1,5 +1,11 @@
 Revision history for AnyEvent-Mojo
 
+0.5    Tue Nov  4 11:19:10 WET 2008
+         - Added pause()/resume() methods to our Connection class
+         - Remove the dependency on Mojo 0.7
+         - Fix: Latest Mojo::Base no longer accepts multiple argumets on attributes
+         - Fix Content-Length handling
+
 0.04    Mon Oct 27 08:26:37 WET 2008
          - Brown-paper-bag mistake: wrong Mojo version required (Pedro Melo)
 
