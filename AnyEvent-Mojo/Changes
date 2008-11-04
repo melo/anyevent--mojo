@@ -7,19 +7,19 @@ Revision history for AnyEvent-Mojo
          - Fix Content-Length handling
 
 0.04    Mon Oct 27 08:26:37 WET 2008
-         - Brown-paper-bag mistake: wrong Mojo version required (Pedro Melo)
+         - Brown-paper-bag mistake: wrong Mojo version required
 
 0.03    Sun Oct 26 20:38:44 WET 2008
-         - Move the test server, MyTestServer, to a tlib directory (Pedro Melo)
-         - Cope with Mojo 0.07 (Pedro Melo)
+         - Move the test server, MyTestServer, to a tlib directory
+         - Cope with Mojo 0.07
 
 0.02    Sat Oct 25 13:31:38 WEST 2008
-         - Added support for keep-alive requests to Connection (Pedro Melo)
-         - Make sure we don't die on SIGPIPE's (Pedro Melo)
-         - The startup banner is printed after the sucessful startup of the server now (Pedro Melo)
-         - Default timeout reduced to 5 seconds (Pedro Melo)
-         - Added stop() method to stop a server (Pedro Melo)
-         - Improve documentation and tests (Pedro Melo)
+         - Added support for keep-alive requests to Connection
+         - Make sure we don't die on SIGPIPE's
+         - The startup banner is printed after the sucessful startup of the server now
+         - Default timeout reduced to 5 seconds
+         - Added stop() method to stop a server
+         - Improve documentation and tests
 
 0.01    Tue Oct 21 18:00:03 WEST 2008
          - First working version
