@@ -78,6 +78,3 @@ diag('Requests sent, waiting for replies');
 $stop->recv;
 
 MyTestServer->stop_server($pid);
-
-
-1;
