@@ -3,10 +3,13 @@ MANIFEST
 Makefile.PL
 README
 lib/AnyEvent/Mojo.pm
-lib/AnyEvent/Mojo/Connection.pm
+lib/AnyEvent/Mojo/Server.pm
+lib/AnyEvent/Mojo/Server/Connection.pm
 t/00-load.t
+t/03-functional.t
 t/05-simple.t
 t/10-keep-alive.t
+t/15-pause-resume.t
 t/pod-coverage.t
 t/pod.t
 t/tlib/MyTestServer.pm
