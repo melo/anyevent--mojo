@@ -23,7 +23,12 @@ sub startup_banner {
 # Fork off a server for us, please?
 
 sub start_server {
-  my ($class, $port, $cb) = @_;
+  my $class = shift;
+  my $port = shift;
+  my $cb = pop;
+  my %args = @_;
+
+  # Default port: random
   $port ||= 4000 + $$ % 10000;
     
   my $pid = fork();
@@ -63,7 +68,8 @@ sub start_server {
 
   # Child
   my $server = AnyEvent::Mojo::Server->new;
-  $server->keep_alive_timeout(30);
+  $server->keep_alive_timeout($args{keep_alive_timeout})
+      if defined $args{keep_alive_timeout};
   $server->port($port)->handler_cb($cb);
   
   $server->run;
