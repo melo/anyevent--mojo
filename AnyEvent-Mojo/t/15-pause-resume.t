@@ -13,7 +13,35 @@ plan skip_all => "Pause/Resume tests require the AnyEvent::HTTP module: $@"
 
 plan tests => 23;
 
-my ($pid, $port) = MyTestServer->start_server;
+my ($pid, $port) = MyTestServer->start_server(undef, sub {
+  my ($srv, $tx) = @_;
+  my $conn = $tx->connection;
+  my $res  = $tx->res;
+  my $url  = $tx->req->url;
+  my ($delay) = $url =~ m{/([\d.]+)};
+  
+  $res->code(200);
+  $res->headers->content_type('text/plain');
+
+  if ($delay) {
+    my $body = "Slept for $delay";
+    $res->body($body);
+
+    my $resume_cb = $conn->pause;
+    my $t; $t = AnyEvent->timer( after => $delay, cb => sub {
+      # Resume the transaction
+      $resume_cb->();
+
+      # Timer no longer needed
+      undef $t;
+    });
+  }
+  else {
+    $res->body('Hi!');
+  }
+      
+  return;
+});
 
 ok($port, "Server is up at $port, pid $pid");
 

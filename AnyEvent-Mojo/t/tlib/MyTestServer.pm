@@ -23,7 +23,7 @@ sub startup_banner {
 # Fork off a server for us, please?
 
 sub start_server {
-  my ($class, $port) = @_;
+  my ($class, $port, $cb) = @_;
   $port ||= 4000 + $$ % 10000;
     
   my $pid = fork();
@@ -40,7 +40,7 @@ sub start_server {
       interval => 2,
       cb => sub {
         AnyEvent::HTTP::http_get(
-          "http://127.0.0.1:$port/0.1",
+          "http://127.0.0.1:$port/",
           timeout => 1,
           cb => sub {
             if (!defined($_[0])) {
@@ -64,35 +64,7 @@ sub start_server {
   # Child
   my $server = AnyEvent::Mojo::Server->new;
   $server->keep_alive_timeout(30);
-  $server->port($port)->handler_cb(sub {
-    my ($srv, $tx) = @_;
-    my $conn = $tx->connection;
-    my $res  = $tx->res;
-    my $url  = $tx->req->url;
-    my ($delay) = $url =~ m{/([\d.]+)};
-    
-    $res->code(200);
-    $res->headers->content_type('text/plain');
-    
-    if ($delay) {
-      my $body = "Slept for $delay";
-      $res->body($body);
-
-      my $resume_cb = $conn->pause;
-      my $t; $t = AnyEvent->timer( after => $delay, cb => sub {
-        # Resume the transaction
-        $resume_cb->();
-
-        # Timer no longer needed
-        undef $t;
-      });
-    }
-    else {
-      $res->body('Hi!');
-    }
-        
-    return;
-  });
+  $server->port($port)->handler_cb($cb);
   
   $server->run;
   exit(0);
