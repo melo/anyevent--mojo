@@ -1,5 +1,11 @@
 Revision history for AnyEvent-Mojo
 
+0.6    Thu Nov  6 15:27:32 WET 2008
+         - New functional interface to AnyEvent::Mojo, mojo_server()
+         - Updated server docs
+         - Renamed AnyEvent::Mojo to AnyEvent::Mojo::Server
+         - refactor test code
+
 0.5    Tue Nov  4 11:19:10 WET 2008
          - Added pause()/resume() methods to our Connection class
          - Remove the dependency on Mojo 0.7

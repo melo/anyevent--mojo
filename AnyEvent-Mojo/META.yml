@@ -1,5 +1,5 @@
 ---
-abstract: 'Run Mojo apps using AnyEvent framework'
+abstract: 'Start async Mojo servers easly'
 author:
   - 'Pedro Melo, C<< <melo at cpan.org> >>'
 build_requires:
@@ -24,9 +24,9 @@ requires:
   AnyEvent::Socket: 0
   Carp: 0
   IO::Socket: 0
-  Mojo: 0
+  Mojo: 0.8005
   perl: 5.8.0
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://github.com/melo/anyevent--mojo/
-version: 0.5
+version: 0.6
