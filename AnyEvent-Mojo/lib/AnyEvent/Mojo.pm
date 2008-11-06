@@ -8,7 +8,7 @@ use base qw( Exporter );
 
 @AnyEvent::Mojo::EXPORT = qw( mojo_server );
 
-our $VERSION = '0.6';
+our $VERSION = '0.6001';
 
 
 #####################

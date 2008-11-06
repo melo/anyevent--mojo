@@ -6,7 +6,7 @@ use base 'Mojo::Base';
 use AnyEvent::Handle;
 use Carp;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 __PACKAGE__->attr('server',    chained => 1, weak => 1);
 __PACKAGE__->attr('sock',      chained => 1);

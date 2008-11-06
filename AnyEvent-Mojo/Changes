@@ -1,5 +1,8 @@
 Revision history for AnyEvent-Mojo
 
+0.6001 Thu Nov  6 16:11:23 WET 2008
+         - Don't close the socket, it might be too soon
+
 0.6    Thu Nov  6 15:27:32 WET 2008
          - New functional interface to AnyEvent::Mojo, mojo_server()
          - Updated server docs
