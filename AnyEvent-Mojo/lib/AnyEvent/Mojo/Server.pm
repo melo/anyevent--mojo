@@ -177,11 +177,12 @@ Version 0.1
 
 =head1 STATUS
 
-This is a first B<alpha> release. The interface B<will> change, and there is
-still missing funcionality, like keep alive support.
+This is a first B<beta> release. The interface B<should> not change in a
+backwards incompatible way until version 1.0.
 
-Basic HTTP/1.1 single request per connection works.
+Basic HTTP/1.0 and HTTP/1.1 works, including keep-alives.
 
+Support for 100-Continue is still missing.
 
 
 =head1 DESCRIPTION
@@ -199,13 +200,16 @@ Then set the request callback with the Mojo::Server method,
 C<handler_cb()>.
 
 This callback will be called on every request. The first parameter is
-the AnyEvent::Mojo::Server server object itself, and the second parameter is a
-Mojo::Transaction.
+the L<AnyEvent::Mojo::Server> server object itself, and the second parameter is a
+L<Mojo::Transaction>.
 
 The code should build the response and return.
 
-For now, the callback is synchronous, so the response must be completed
-when the callback returns. Future versions will lift this restriction.
+Optionally, you can pause the current request and resume it later. This
+is useful if you need to request information from a remote service to
+answer the current request. You pause the current Mojo request, ask the
+information asyncronously, and resume when the answer arrives. In the
+meantime, you can keep answering other requests.
 
 
 
@@ -214,17 +218,20 @@ when the callback returns. Future versions will lift this restriction.
 
 =head2 new
 
-The constructor. Takes no parameters, returns a server object.
+Creates a new L<AnyEvent::Server::Mojo> instance.
+
+Returns a L<AnyEvent::Server::Mojo> object.
 
 
 =head2 host
 
-Address where the server is listening to client requests.
+The hostname or IP address to which the server will bind to. By default it
+will bind to all interfaces.
 
 
 =head2 port
 
-Port where the server will listen to. Defaults to 3000.
+Port where the server will listen on. Defaults to 3000.
 
 
 =head2 listen_queue_size
