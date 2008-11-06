@@ -1,4 +1,4 @@
-package AnyEvent::Mojo::Connection;
+package AnyEvent::Mojo::Server::Connection;
 
 use strict;
 use warnings;
@@ -139,7 +139,7 @@ sub _read {
   return unless defined $handle->{rbuf};
 
   my $tx  = $self->_current_transaction;
-  my $req = $tx->request;
+  my $req = $tx->req;
   $req->parse(delete $handle->{rbuf});
 
   my $done = $req->is_state(qw/done error/);
@@ -269,7 +269,7 @@ sub _get_next_chunk {
 }
 
 
-42; # End of AnyEvent::Mojo::Connection
+42; # End of AnyEvent::Mojo::Server::Connection
 
 __END__
 
@@ -277,7 +277,7 @@ __END__
 
 =head1 NAME
 
-AnyEvent::Mojo::Connection - An active TCP connection to AnyEvent::Mojo
+AnyEvent::Mojo::Server::Connection - An active TCP connection to AnyEvent::Mojo::Server
 
 
 
@@ -289,15 +289,15 @@ Version 0.1
 
 =head1 SYNOPSIS
 
-    use AnyEvent::Mojo::Connection;
+    use AnyEvent::Mojo::Server::Connection;
 
     ...
 
 
 =head1 DESCRIPTION
 
-Foreach connection to a L< AnyEvent::Mojo > server,
-a C< AnyEvent::Mojo::Connection > object is created.
+Foreach connection to a L< AnyEvent::Mojo::Server >,
+a C< AnyEvent::Mojo::Server::Connection > object is created.
 
 This object keeps track of the current L< Mojo::Transaction >.
 
@@ -331,7 +331,7 @@ The TCP port number of the client.
 
 =item server
 
-The L< AnyEvent::Mojo > server to whom this connection belongs to.
+The L< AnyEvent::Mojo::Server > to whom this connection belongs to.
 
 
 =item timeout
@@ -344,7 +344,7 @@ If no data is sent, the connection is closed.
 =back
 
 
-It returns the C< AnyEvent::Mojo::Connection > object.
+It returns the C< AnyEvent::Mojo::Server::Connection > object.
 
 
 

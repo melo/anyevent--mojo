@@ -5,7 +5,7 @@ use warnings;
 use Test::More tests => 83;
 use Test::Exception;
 use Test::Deep;
-use AnyEvent::Mojo;
+use AnyEvent::Mojo::Server;
 use Mojo::Client;
 
 my $port = 4000 + $$ % 10000;
@@ -67,7 +67,7 @@ sub start_server {
   }
 
   # Child
-  my $server = AnyEvent::Mojo->new;
+  my $server = AnyEvent::Mojo::Server->new;
   $server->keep_alive_timeout(1);
   $server->port($port)->handler_cb(sub {
     my ($srv, $tx) = @_;

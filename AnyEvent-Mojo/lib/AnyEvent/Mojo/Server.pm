@@ -1,4 +1,4 @@
-package AnyEvent::Mojo;
+package AnyEvent::Mojo::Server;
 
 use strict;
 use warnings;
@@ -7,10 +7,10 @@ use base 'Mojo::Server';
 use Carp qw( croak );
 use AnyEvent;
 use AnyEvent::Socket;
-use AnyEvent::Mojo::Connection;
+use AnyEvent::Mojo::Server::Connection;
 use IO::Socket qw( SOMAXCONN );
 
-our $VERSION = '0.5';
+our $VERSION = '0.1';
 
 __PACKAGE__->attr('port',         chained => 1, default => 3000);
 __PACKAGE__->attr('host',         chained => 1);
@@ -32,7 +32,7 @@ __PACKAGE__->attr('run_guard',    chained => 1);
 __PACKAGE__->attr('listen_guard', chained => 1);
 __PACKAGE__->attr('connection_class',
     chained => 1,
-    default => 'AnyEvent::Mojo::Connection'
+    default => 'AnyEvent::Mojo::Server::Connection'
 );
 
 
@@ -117,7 +117,7 @@ sub startup_banner {
 }
 
 
-42; # End of AnyEvent::Mojo
+42; # End of AnyEvent::Mojo::Server
 
 __END__
 
@@ -125,7 +125,7 @@ __END__
 
 =head1 NAME
 
-AnyEvent::Mojo - Run Mojo apps using AnyEvent framework
+AnyEvent::Mojo::Server - Run Mojo apps using AnyEvent framework
 
 
 
@@ -140,9 +140,9 @@ Version 0.1
     use strict;
     use warnings;
     use AnyEvent;
-    use AnyEvent::Mojo;
+    use AnyEvent::Mojo::Server;
     
-    my $server = AnyEvent::Mojo->new;
+    my $server = AnyEvent::Mojo::Server->new;
     $server->port(3456)->listen_queue_size(10);
     $server->max_keep_alive_requests(100)->keep_alive_timeout(3);
     
@@ -190,16 +190,16 @@ This module allows you to integrate Mojo applications with the AnyEvent
 framework. For example, you can run a web interface for a long-lived
 AnyEvent daemon.
 
-The AnyEvent::Mojo extends the Mojo::Server class.
+The AnyEvent::Mojo::Server extends the Mojo::Server class.
 
-To use you need to create a AnyEvent::Mojo object. You can set the port
+To use you need to create a AnyEvent::Mojo::Server object. You can set the port
 with the C< port() > method.
 
 Then set the request callback with the Mojo::Server method, 
 C<handler_cb()>.
 
 This callback will be called on every request. The first parameter is
-the AnyEvent::Mojo server object itself, and the second parameter is a
+the AnyEvent::Mojo::Server server object itself, and the second parameter is a
 Mojo::Transaction.
 
 The code should build the response and return.
@@ -262,7 +262,7 @@ Returns the number of requests the server has answered since it started.
 
 Sets the class name that will be used to process each connection.
 
-Defaults to L< AnyEvent::Mojo::Connection >.
+Defaults to L< AnyEvent::Mojo::Server::Connection >.
 
 
 =head2 listen
@@ -287,7 +287,7 @@ C< run() >.
 =head2 startup_banner
 
 Called after the listening socket is started. You can override this method
-on your L< AnyEvent::Mojo > subclasses to setup other components.
+on your L< AnyEvent::Mojo::Server > subclasses to setup other components.
 
 The default C< startup_banner > prints the URL where the server
 is listening to requests.

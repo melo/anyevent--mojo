@@ -5,7 +5,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Deep;
-use AnyEvent::Mojo;
+use AnyEvent::Mojo::Server;
 
 eval { require AnyEvent::HTTP; };
 plan skip_all => 'Pause/Resume tests require the AnyEvent::HTTP module'
@@ -88,7 +88,7 @@ sub start_server {
   }
 
   # Child
-  my $server = AnyEvent::Mojo->new;
+  my $server = AnyEvent::Mojo::Server->new;
   $server->keep_alive_timeout(30);
   $server->port($port)->handler_cb(sub {
     my ($srv, $tx) = @_;

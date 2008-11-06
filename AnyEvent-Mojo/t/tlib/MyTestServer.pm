@@ -2,7 +2,7 @@ package MyTestServer;
 
 use strict;
 use warnings;
-use base 'AnyEvent::Mojo';
+use base 'AnyEvent::Mojo::Server';
 
 BEGIN {
   __PACKAGE__->attr('banner_called');
