@@ -43,7 +43,6 @@ sub close {
   my ($self) = @_;
   
   $self->tx(undef)->handle(undef);
-  close($self->sock);
 }
 
 
