@@ -64,7 +64,7 @@ sub pause {
   croak("pause() only works on tx's in the 'write' state")
     unless $tx && $tx->is_state('write');
   
-  $self->tx->state('paused');
+  $tx->state('paused');
   
   return sub { $self->resume };
 }
@@ -76,7 +76,7 @@ sub resume {
   croak("resume() only works on tx's in the 'paused' state")
     unless $tx && $tx->is_state('paused');
   
-  $self->tx->state('write');
+  $tx->state('write');
   $self->_write;
   
   return;
