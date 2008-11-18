@@ -15,14 +15,18 @@ our $VERSION = '0.6002';
 # Start a Mojo server
 
 sub mojo_server {
-  my ($host, $port, $cb) = @_;
+  my %args;
+  if (ref($_[0]) eq 'HASH') {
+    %args = %{$_[0]};
+  }
+  else {
+    @args{qw( host port handler_cb )} = @_;
+  }
   
-  croak('FATAL: the callback is required, ') unless ref($cb) eq 'CODE';
+  croak('FATAL: the handler callback is required, ')
+    unless ref($args{handler_cb}) eq 'CODE';
   
-  my $server = AnyEvent::Mojo::Server->new;
-  $server->host($host) if $host;
-  $server->port($port) if $port;
-  $server->handler_cb($cb);
+  my $server = AnyEvent::Mojo::Server->new(%args);
   
   $server->listen;
   
@@ -44,7 +48,7 @@ AnyEvent::Mojo - Start async Mojo servers easly
 
 =head1 VERSION
 
-Version 0.6
+Version 0.6002
 
 
 
@@ -62,6 +66,18 @@ Version 0.6
       
       # Handle the request here, see AnyEvent::Mojo::Server for details
     };
+    
+    # or...
+
+    my $server = mojo_server {
+      host       => '127.0.0.1',
+      port       => $port,
+      handler_cb => sub {
+          my ($self, $tx) = @_;
+          
+          # Handle the request here, see AnyEvent::Mojo::Server for details
+      },
+    };    
         
     # Run the loop
     $server->run
@@ -113,7 +129,16 @@ is the server object, and the second is a C<Mojo::Transaction>.
 
 =back
 
+Alternatively you can pass a hash or hashref with all the options that will
+be passed along to C<AnyEvent::Mojo::Server> constructor.
+
 Returns a C<AnyEvent::Mojo::Server> object.
+
+
+
+=head1 SEE ALSO
+
+L<AnyEvent::Mojo::Server>, L<Mojo, and L<AnyEvent>.
 
 
 
