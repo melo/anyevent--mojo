@@ -19,6 +19,10 @@ __PACKAGE__->attr('request_count', chained => 1, default => 0);
 __PACKAGE__->attr('tx',        chained => 1);
 __PACKAGE__->attr('handle',    chained => 1);
 
+sub _log {
+  return unless $ENV{CONN_DEBUG};
+  print STDERR @_;
+}
 
 sub run {
   my $self = shift;
@@ -34,6 +38,7 @@ sub run {
   );
   $self->handle($handle);
 
+  _log("**** start connection $self\n");
   $self->_ready_for_transaction;
   
   return;
@@ -41,6 +46,9 @@ sub run {
 
 sub close {
   my ($self) = @_;
+  _log("**** close connection $self\n");
+  use Carp qw( longmess );
+  _log(longmess("**** Closing from: "));
   
   $self->tx(undef)->handle(undef);
 }
@@ -60,6 +68,7 @@ sub _on_timeout {
 sub pause {
   my ($self) = @_;
   my $tx = $self->tx;
+  _log("#### pause called with tx ",(defined $tx? $tx : '<undef>')," ($self)\n");
   
   croak("pause() only works on tx's in the 'write' state")
     unless $tx && $tx->is_state('write');
@@ -72,6 +81,7 @@ sub pause {
 sub resume {
   my ($self) = @_;
   my $tx = $self->tx;
+  _log("#### resume called with tx ",(defined $tx? $tx : '<undef>')," ($self)\n");
 
   croak("resume() only works on tx's in the 'paused' state")
     unless $tx && $tx->is_state('paused');
@@ -88,6 +98,7 @@ sub resume {
 
 sub _ready_for_transaction {
   my $self = shift;
+  _log("----- ready for transaction (PUSH READ)\n");
   
   $self->handle->push_read(sub { $self->_read(@_) });
   
@@ -97,6 +108,7 @@ sub _ready_for_transaction {
 sub _current_transaction {
   my $self = shift;
   my $tx   = $self->tx;
+  _log("----- current transaction? ",(defined $tx? $tx : '<undef>'),"\n");
   
   # Initial request, prepare transaction
   if (!$tx) {
@@ -104,6 +116,7 @@ sub _current_transaction {
     $tx = $srv->build_tx_cb->($srv)->state('read');
     $self->tx($tx);
     $tx->connection($self);
+    _log("----- created tx $tx\n");
   }
   
   return $tx;
@@ -112,6 +125,8 @@ sub _current_transaction {
 sub _last_transaction {
   my $self = shift;
   
+  my $tx = $self->tx;
+  _log("---- this is last transaction ($tx)....\n");
   $self->tx->res->headers->connection('Close');
   
   return;
@@ -123,6 +138,8 @@ sub _end_transaction {
   my $tx     = $self->tx;
   my $ka     = $tx->keep_alive;  
 
+  my $tx = $self->tx;
+  _log("---- end transaction ($tx) - destroy....\n");
   # Destroy current tx
   $self->tx(undef);
 
@@ -144,6 +161,7 @@ sub _read {
   my ($self, $handle) = @_;
 
   return unless defined $handle->{rbuf};
+  _log(">>>> read stuff\n");
 
   my $tx  = $self->_current_transaction;
   my $req = $tx->req;
@@ -152,6 +170,7 @@ sub _read {
   my $done = $req->is_state(qw/done error/);
   # FIXME: we should take care of error differently
   if ($done) {
+    _log(">>>> request done\n");
     my $srv = $self->server;
 
     # Check to see if this is our last request
@@ -163,9 +182,14 @@ sub _read {
     if ($max_keep_alive_requests && $count >= $max_keep_alive_requests) {
       $self->_last_transaction('max-keep-alive');
     }
-    
+
+    # # Disable timeouts, we might be here a while...
+    # $handle->timeout(0);
+    #     
+    _log(">>>> call handler\n");
     $tx->state('write');
     $srv->handler_cb->($srv, $tx);
+    _log(">>>> handler returns\n");
     
     $self->_write if $tx->is_state('write');
   }
@@ -179,8 +203,12 @@ sub _read {
 
 sub _write {
   my ($self) = @_;
+  my $handle = $self->handle;
 
-  $self->handle->on_drain(sub {
+  # # Re-enable timeouts, we are walking, we are walking...  
+  # $handle->timeout($self->timeout);
+  # 
+  $handle->on_drain(sub {
     $self->_write_more;
   });
 }
@@ -188,6 +216,7 @@ sub _write {
 sub _write_more {
   my ($self) = @_;
   my $handle = $self->handle;
+  _log("<<<< write stuff\n");
 
   if (my $done = $self->_tx_state_machine_adv) {
     $handle->on_drain(undef);
@@ -203,6 +232,9 @@ sub _write_more {
 sub _tx_state_machine_adv {
   my ($self) = @_;
   my $tx   = $self->tx;
+  if (!$tx) {
+    _log("!!!! No tx for $self");
+  }
   my $res  = $tx->res;
   my $done = 0;
   
