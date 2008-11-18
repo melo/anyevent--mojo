@@ -109,12 +109,7 @@ sub stop {
   }
 }
 
-sub startup_banner {
-  my $self = shift;
-  my ($host, $port) = ($self->host, $self->port);
-  
-  print "Server available at http://$host:$port/\n";
-}
+sub startup_banner {}
 
 
 42; # End of AnyEvent::Mojo::Server
@@ -296,8 +291,7 @@ C< run() >.
 Called after the listening socket is started. You can override this method
 on your L< AnyEvent::Mojo::Server > subclasses to setup other components.
 
-The default C< startup_banner > prints the URL where the server
-is listening to requests.
+The default C< startup_banner > is empty.
 
 
 
