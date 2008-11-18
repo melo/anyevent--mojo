@@ -13,7 +13,7 @@ plan skip_all => "Pause/Resume tests require the AnyEvent::HTTP module: $@"
 
 plan tests => 23;
 
-my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 30, sub {
+my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, sub {
   my ($srv, $tx) = @_;
   my $conn = $tx->connection;
   my $res  = $tx->res;

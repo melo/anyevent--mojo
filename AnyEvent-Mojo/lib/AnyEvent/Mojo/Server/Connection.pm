@@ -30,7 +30,7 @@ sub run {
     timeout    => $self->timeout,
     on_eof     => sub { $self->close('eof')     },
     on_error   => sub { $self->close('error')   },
-    on_timeout => sub { $self->close('timeout') },
+    on_timeout => sub { $self->_on_timeout },
   );
   $self->handle($handle);
 
@@ -43,6 +43,14 @@ sub close {
   my ($self) = @_;
   
   $self->tx(undef)->handle(undef);
+}
+
+sub _on_timeout {
+  my $self = shift;
+  my $tx = $self->tx;
+
+  return $self->close('timeout') unless $tx && $tx->state eq 'paused';
+  return;
 }
 
 
@@ -335,9 +343,12 @@ The L< AnyEvent::Mojo::Server > to whom this connection belongs to.
 
 =item timeout
 
-Number of seconds the connection will wait for data while reading.
+Seconds (can be fractional) that the connection can be idle (waiting
+for a request or unable to write more data out).
 
-If no data is sent, the connection is closed.
+If the connection is paused, the timeout is ignored.
+
+If the timeout fires, the connection is closed.
 
 
 =back
@@ -426,6 +437,8 @@ Pauses the current transaction.
 
 The transaction state must be C<write>, that is, before sending any status
 or header responses.
+
+While the connection is paused, inactivity timeouts are ignored.
 
 Returns a coderef that, when called, will resume the transaction.
 
