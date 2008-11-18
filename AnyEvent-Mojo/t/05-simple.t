@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 12;
+use Test::More tests => 16;
 use Test::Exception;
 use Test::Deep;
 use AnyEvent::HTTP;
@@ -47,3 +47,14 @@ $server->run;
 
 lives_ok sub { $server->stop }, 'Second call to stop is harmless';
 
+my $cb = sub {};
+my $port = 34534 + ($$ + time()) % 1000;
+$server = MyTestServer->new(
+  host => '127.0.0.1',
+  port => $port,
+  handler_cb => $cb,
+);
+ok($server);
+is($server->host, '127.0.0.1');
+is($server->port, $port);
+is($server->handler_cb, $cb);

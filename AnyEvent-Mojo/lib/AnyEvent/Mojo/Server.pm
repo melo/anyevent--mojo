@@ -42,7 +42,7 @@ sub listen {
   # Already listening
   return if $self->listen_guard;
   
-  my $guard = tcp_server(undef, $self->port,
+  my $guard = tcp_server($self->host, $self->port,
     # on connection
     sub {
       my ($sock, $peer_host, $peer_port) = @_;
