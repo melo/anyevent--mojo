@@ -8,7 +8,7 @@ use base qw( Exporter );
 
 @AnyEvent::Mojo::EXPORT = qw( mojo_server );
 
-our $VERSION = '0.6001';
+our $VERSION = '0.6002';
 
 
 #####################
@@ -120,6 +120,16 @@ Returns a C<AnyEvent::Mojo::Server> object.
 =head1 AUTHOR
 
 Pedro Melo, C<< <melo at cpan.org> >>
+
+
+
+=head1 CREDITS
+
+In alphabetical order:
+
+Lars Balker Rasmussen
+
+Sebastian Riedel
 
 
 
