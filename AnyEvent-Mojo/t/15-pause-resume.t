@@ -5,13 +5,14 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Deep;
+use Data::Dumper;
 use lib 't/tlib';
 
 eval { require MyTestServer; };
 plan skip_all => "Pause/Resume tests require the AnyEvent::HTTP module: $@"
   if $@;
 
-plan tests => 23;
+plan tests => 32;
 
 my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, sub {
   my ($srv, $tx) = @_;
@@ -35,6 +36,9 @@ my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, su
       # Timer no longer needed
       undef $t;
     });
+  }
+  elsif ($url eq '/stats') {
+    $res->body(Dumper($srv->stats));
   }
   else {
     $res->body('Hi!');
@@ -63,6 +67,7 @@ while ($count++ < $conns) {
   $active++;   
   AnyEvent::HTTP::http_get("http://127.0.0.1:$port/$sleep_for", sub {
     my ($data) = @_;
+    $active--;
     
     is(
       $data, "Slept for $sleep_for",
@@ -70,7 +75,28 @@ while ($count++ < $conns) {
     );
     ok(time()-$now-1 <= $sleep_for, 'Timming ok');
     
-    $stop->send if --$active == 0; 
+    return if $active; 
+    
+    # Collect and check stats
+    AnyEvent::HTTP::http_get("http://127.0.0.1:$port/stats", sub {
+      my ($stats) = @_;
+      
+      # untaint, quick and very very dirty
+      ($stats) = $stats =~ m/(.+)/sm;
+      
+      $stats = eval "my $stats";
+      ok($stats);
+      ok(scalar(%{$stats}));
+      is($stats->{conn_failed}, 0);
+      is($stats->{conn_success}, 2+$conns);
+      is($stats->{tx_started}, 2+$conns);
+      ok($stats->{timeout_ign});
+      ok($stats->{reads});
+      ok($stats->{writes});
+      ok($stats->{reads_with_content});
+            
+      $stop->send
+    });
   });
 }
 

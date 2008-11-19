@@ -10,7 +10,7 @@ eval { require AnyEvent::HTTP; AnyEvent::HTTP->import };
 plan skip_all => "Functional tests require the AnyEvent::HTTP module: $@"
   if $@;
 
-plan tests => 11;
+plan tests => 20;
 
 my $port = 4000 + $$ % 10000;
 my $server; $server = mojo_server(undef, $port, sub {
@@ -34,6 +34,17 @@ my $t; $t = AnyEvent->timer( after => .5, cb => sub {
     
     ok($content);
     like($content, qr/Lamb chops for dinner/);
+    
+    my $stats = $server->stats;
+    ok($stats);
+    ok(scalar(%$stats));
+    is($stats->{conn_failed},  0);
+    is($stats->{conn_success}, 1);
+    ok($stats->{reads});
+    ok($stats->{reads_with_content});
+    ok($stats->{writes});
+    is($stats->{conn_close}{no_keep_alive}, 1);
+    is($stats->{tx_started}, 1);
     
     $server->stop;
   });
