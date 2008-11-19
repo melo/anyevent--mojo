@@ -130,7 +130,7 @@ sub _end_transaction {
     $self->_ready_for_transaction;
   }
   else {
-    $self->close;
+    $self->close('no-keep-alive');
   }
   
   return;
