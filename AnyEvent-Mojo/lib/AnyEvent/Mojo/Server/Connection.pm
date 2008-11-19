@@ -40,7 +40,9 @@ sub run {
 }
 
 sub close {
-  my ($self) = @_;
+  my ($self, $reason) = @_;
+  
+  $self->{server}{stats}{conn_close}{$reason}++;
   
   $self->tx(undef)->handle(undef);
 }
@@ -50,6 +52,7 @@ sub _on_timeout {
   my $tx = $self->tx;
 
   return $self->close('timeout') unless $tx && $tx->state eq 'paused';
+  $self->{server}{stats}{timeout_ign}++;
   return;
 }
 
@@ -104,6 +107,7 @@ sub _current_transaction {
     $tx = $srv->build_tx_cb->($srv)->state('read');
     $self->tx($tx);
     $tx->connection($self);
+    $self->{server}{stats}{tx_started}++;
   }
   
   return $tx;
@@ -127,6 +131,7 @@ sub _end_transaction {
   $self->tx(undef);
 
   if ($ka) {
+    $self->{server}{stats}{tx_kept_alive}++;
     $self->_ready_for_transaction;
   }
   else {
@@ -142,8 +147,10 @@ sub _end_transaction {
 
 sub _read {
   my ($self, $handle) = @_;
+  $self->{server}{stats}{reads}++;
 
   return unless defined $handle->{rbuf};
+  $self->{server}{stats}{reads_with_content}++;
 
   my $tx  = $self->_current_transaction;
   my $req = $tx->req;
@@ -196,6 +203,7 @@ sub _write_more {
     return;
   }
   
+  $self->{server}{stats}{writes}++;
   $handle->push_write($self->_get_next_chunk);
 }
 
