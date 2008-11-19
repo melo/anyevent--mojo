@@ -215,6 +215,27 @@ meantime, you can keep answering other requests.
 
 Creates a new L<AnyEvent::Server::Mojo> instance.
 
+Accepts an hash/hashref with options. All the following methods can be used
+as options. Check the method documentation below for valid values and an
+explanation about each one.
+
+=over 4
+
+=item host
+
+=item port
+
+=item listen_queue_size
+
+=item max_keep_alive_requests
+
+=item keep_alive_timeout
+
+=item connection_class
+
+=back
+
+
 Returns a L<AnyEvent::Server::Mojo> object.
 
 
