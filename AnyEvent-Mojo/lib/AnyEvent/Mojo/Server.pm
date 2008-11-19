@@ -323,6 +323,74 @@ on your L< AnyEvent::Mojo::Server > subclasses to setup other components.
 The default C< startup_banner > is empty.
 
 
+=head2 stats
+
+Returns a hashref with collected statistics.
+
+The following fields might be present:
+
+=over 4
+
+=item conn_sucess
+
+Number of sucessful connections established.
+
+
+=item conn_failed
+
+Number of unsucessful connection attempts.
+
+
+=item conn_closed
+
+An hashref with connection close reasons. The following reasons might be
+present:
+
+=over 8
+
+=item eof
+
+The client closed the connection.
+
+=item no_keep_alive
+
+Connection close because keep-alive was not possible.
+
+=item timeout
+
+Timeout while reading from or writting to the client.
+
+Keep-alive timeouts also increment this counter.
+
+=item error
+
+Read or write errors.
+
+=back
+
+=item tx_started
+
+Number of requests that we started reading
+
+=item tx_kept_alive
+
+Number of transactions that didn't close the connection afterwards.
+
+=item reads
+
+Number of read events.
+
+=item reads_with_content
+
+Number of reads with content available for processing.
+
+=item writes
+
+Number of writes performed.
+
+=back
+
+
 
 =head1 AUTHOR
 
