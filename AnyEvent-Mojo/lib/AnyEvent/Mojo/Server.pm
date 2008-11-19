@@ -50,7 +50,7 @@ sub listen {
       my ($sock, $peer_host, $peer_port) = @_;
       
       if (!$sock) {
-        $self->{stats}{connect_failed}++;
+        $self->{stats}{conn_failed}++;
         $self->log("Connect failed: $!");
         return;
       }
@@ -64,7 +64,7 @@ sub listen {
         timeout   => $self->keep_alive_timeout,
       )->run;
 
-      $self->{stats}{connect_success}++;
+      $self->{stats}{conn_success}++;
     },
     
     # Setup listen queue size, record our hostname and port
@@ -77,6 +77,9 @@ sub listen {
   
   $self->listen_guard(sub { $guard = undef });
   $self->startup_banner;
+  
+  $self->{stats}{conn_failed}  = 0;
+  $self->{stats}{conn_success} = 0;
   
   return;
 }
