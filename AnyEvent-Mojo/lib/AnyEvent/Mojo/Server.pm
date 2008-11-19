@@ -35,6 +35,8 @@ __PACKAGE__->attr('connection_class',
     default => 'AnyEvent::Mojo::Server::Connection'
 );
 
+__PACKAGE__->attr('stats', default => sub { {} });
+
 
 sub listen {
   my $self = shift;
