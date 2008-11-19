@@ -135,7 +135,7 @@ sub _end_transaction {
     $self->_ready_for_transaction;
   }
   else {
-    $self->close('no-keep-alive');
+    $self->close('no_keep_alive');
   }
   
   return;
