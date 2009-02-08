@@ -23,6 +23,11 @@ sub mojo_server {
     @args{qw( host port handler_cb )} = @_;
   }
   
+  my $cb = $args{handler_cb};
+  if (ref($cb) && ref($cb) ne 'CODE' && $cb->can('handler')) {
+    $args{handler_cb} = sub { $cb->handler($_[1]) };
+  }
+  
   croak('FATAL: the handler callback is required, ')
     unless ref($args{handler_cb}) eq 'CODE';
   
