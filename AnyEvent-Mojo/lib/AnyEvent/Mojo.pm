@@ -4,9 +4,11 @@ use strict;
 use warnings;
 use 5.008;
 use AnyEvent::Mojo::Server;
+use AnyEvent::Mojo::Client;
+use Mojo::Transaction;
 use base qw( Exporter );
 
-@AnyEvent::Mojo::EXPORT = qw( mojo_server );
+@AnyEvent::Mojo::EXPORT = qw( mojo_server mojo_client mojo_get );
 
 our $VERSION = '0.6002';
 
@@ -31,6 +33,24 @@ sub mojo_server {
   $server->listen;
   
   return $server;
+}
+
+my $client;
+sub mojo_client {
+  my ($tx, $cb) = @_;
+
+  $client = AnyEvent::Mojo::Client->new unless $client;
+  $client->process($tx, $cb) if $tx && $cb;
+  
+  return $client;
+}
+
+sub mojo_get {
+  my ($url, $cb) = @_;
+
+  my $tx = Mojo::Transaction->new_get($url);
+
+  return mojo_client($tx, $cb);
 }
 
 

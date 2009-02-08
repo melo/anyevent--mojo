@@ -2,17 +2,12 @@
 
 use strict;
 use warnings;
-use Test::More;
+use Test::More tests => 83;
 use Test::Exception;
 use Test::Deep;
-use Mojo::Client;
+use AnyEvent::Mojo;
 use lib 't/tlib';
-
-eval { require MyTestServer; };
-plan skip_all => "KeepAlive tests require the AnyEvent::HTTP module: $@"
-  if $@;
-
-plan tests => 83;
+use MyTestServer;
 
 my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, sub {
   my ($srv, $tx) = @_;
@@ -43,43 +38,64 @@ my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, su
 ok($port, "Server is up at $port, pid $pid");
 
 # 10 keep-alive requests
-my $cln = Mojo::Client->new;
-
 # Start server already did one connection
 my $count;
 my $total;
-while ($count++ < 10) {
-  my $tx = Mojo::Transaction->new_get("http://127.0.0.1:$port/");
-  
-  $cln->process_all($tx);
+my $delta = 1;
 
+my $client = mojo_client();
+
+my $url = "http://127.0.0.1:$port/";
+my $cb;
+
+$cb = sub {
+  my ($tx) = @_;
+  $count++;
+
+print STDERR "+++ GOT TX state is ".$tx->state."\n";  
   is($tx->res->code, 200);
   my $body = $tx->res->body;
   
   like($body, qr/pid: $pid/);
   like($body, qr/req_per_conn: $count/);
-  $total = $count + 1;
+  $total = $count + $delta;
+  print STDERR "CHECK $count $delta = $total\n";
   like($body, qr/total_req: $total/);
-}
+  
+  if ($count < 10) {
+    my $t; $t = AnyEvent->timer(
+      after => .1,
+      cb    => sub {
+        mojo_get($url, $cb);
+        undef $t;
+      }
+    );
+  }
+  else {
+    $client->stop;
+  }
+};
+
+mojo_get($url, $cb);
+$client->run;
+
 
 # Max keep alive timeout is 1
-sleep(2);
+my $t; $t = AnyEvent->timer(
+  after => 5,
+  cb    => sub {
+    $client->stop;
+    undef $t;
+  },
+);
+$client->run;
 
-# 10 keep-alive requests
+
+# another 10 keep-alive requests
 $count = 0;
-while ($count++ < 10) {
-  my $tx = Mojo::Transaction->new_get("http://127.0.0.1:$port/");
-  
-  $cln->process_all($tx);
+$delta = 11;
 
-  is($tx->res->code, 200);
-  my $body = $tx->res->body;
-  
-  like($body, qr/pid: $pid/);
-  like($body, qr/req_per_conn: $count/);
-  
-  my $t = $count + 11;
-  like($body, qr/total_req: $t/);
-}
+mojo_get($url, $cb);
+$client->run;
 
 MyTestServer->stop_server($pid);

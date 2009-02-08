@@ -5,8 +5,8 @@ use warnings;
 use Test::More tests => 16;
 use Test::Exception;
 use Test::Deep;
-use AnyEvent::HTTP;
 use IO::Socket qw( SOMAXCONN );
+use AnyEvent::Mojo;
 use lib 't/tlib';
 
 BEGIN {
@@ -28,8 +28,9 @@ cmp_deeply($server->banner_called, [ '0.0.0.0', $new_port ]);
 
 # GET the server
 my $timer; $timer = AnyEvent->timer( after => .5, cb => sub {
-  http_get("http://0.0.0.0:$new_port/", sub {
-    my ($content) = @_;
+  mojo_get("http://0.0.0.0:$new_port/", sub {
+    my ($tx) = @_;
+    my $content = $tx->res->body;
     
     ok($content, 'Got some content back');
     like(

@@ -6,10 +6,6 @@ use Test::More;
 use AnyEvent;
 use AnyEvent::Mojo;
 
-eval { require AnyEvent::HTTP; AnyEvent::HTTP->import };
-plan skip_all => "Functional tests require the AnyEvent::HTTP module: $@"
-  if $@;
-
 plan tests => 11;
 
 my $port = 4000 + $$ % 10000;
@@ -29,8 +25,9 @@ is($server->port, $port);
 is(ref($server->handler_cb), 'CODE');
 
 my $t; $t = AnyEvent->timer( after => .5, cb => sub {
-  http_get( "http://127.0.0.1:$port/", sub {
-    my ($content) = @_;
+  mojo_get( "http://127.0.0.1:$port/", sub {
+    my ($tx) = @_;
+    my $content = $tx->res->body;
     
     ok($content);
     like($content, qr/Lamb chops for dinner/);

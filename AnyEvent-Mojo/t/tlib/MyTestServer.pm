@@ -67,10 +67,17 @@ sub start_server {
 
 
   # Child
+  my $t_req = 0;
   my $server = AnyEvent::Mojo::Server->new;
   $server->keep_alive_timeout($args{keep_alive_timeout})
       if defined $args{keep_alive_timeout};
-  $server->port($port)->handler_cb($cb);
+  $server->port($port)->handler_cb(sub {
+    my ($srv, $tx) = @_;
+    $t_req++;
+    my $s_t_req = $srv->request_count;
+    print STDERR "!! HIT ($t_req/$s_t_req): ".$tx->req->url."\n";
+    return $cb->(@_); 
+  });
   
   $server->run;
   exit(0);
