@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use 5.008;
 use AnyEvent::Mojo::Server;
+use Carp qw( croak );
 use base qw( Exporter );
 
 @AnyEvent::Mojo::EXPORT = qw( mojo_server );
