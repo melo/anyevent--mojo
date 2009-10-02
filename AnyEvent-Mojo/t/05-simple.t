@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 16;
+use Test::More;
 use Test::Exception;
 use Test::Deep;
 use AnyEvent::HTTP;
@@ -58,3 +58,5 @@ ok($server);
 is($server->host, '127.0.0.1');
 is($server->port, $port);
 is($server->handler_cb, $cb);
+
+done_testing();

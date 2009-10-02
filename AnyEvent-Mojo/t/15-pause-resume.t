@@ -11,8 +11,6 @@ eval { require MyTestServer; };
 plan skip_all => "Pause/Resume tests require the AnyEvent::HTTP module: $@"
   if $@;
 
-plan tests => 23;
-
 my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, sub {
   my ($srv, $tx) = @_;
   my $conn = $tx->connection;
@@ -78,3 +76,5 @@ diag('Requests sent, waiting for replies');
 $stop->recv;
 
 MyTestServer->stop_server($pid);
+
+done_testing();

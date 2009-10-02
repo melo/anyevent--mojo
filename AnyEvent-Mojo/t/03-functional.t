@@ -10,8 +10,6 @@ eval { require AnyEvent::HTTP; AnyEvent::HTTP->import };
 plan skip_all => "Functional tests require the AnyEvent::HTTP module: $@"
   if $@;
 
-plan tests => 11;
-
 my $port = 4000 + $$ % 10000;
 my $server; $server = mojo_server(undef, $port, sub {
   my (undef, $tx) = @_;
@@ -51,3 +49,5 @@ ok($server);
 is($server->host, '127.0.0.1');
 is($server->port, $port);
 is(ref($server->handler_cb), 'CODE');
+
+done_testing();

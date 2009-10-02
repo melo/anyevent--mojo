@@ -12,8 +12,6 @@ eval { require MyTestServer; };
 plan skip_all => "KeepAlive tests require the AnyEvent::HTTP module: $@"
   if $@;
 
-plan tests => 83;
-
 my ($pid, $port) = MyTestServer->start_server(undef, keep_alive_timeout => 1, sub {
   my ($srv, $tx) = @_;
   my $conn = $tx->connection;
@@ -83,3 +81,5 @@ while ($count++ < 10) {
 }
 
 MyTestServer->stop_server($pid);
+
+done_testing();
