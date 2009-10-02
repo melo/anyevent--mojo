@@ -9,8 +9,6 @@ use base qw( Exporter );
 
 @AnyEvent::Mojo::EXPORT = qw( mojo_server );
 
-our $VERSION = '0.6002';
-
 
 #####################
 # Start a Mojo server
@@ -44,13 +42,6 @@ __END__
 =head1 NAME
 
 AnyEvent::Mojo - Start async Mojo servers easly
-
-
-
-=head1 VERSION
-
-Version 0.6002
-
 
 
 =head1 SYNOPSIS
@@ -165,3 +156,4 @@ Copyright 2008 Pedro Melo.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
+

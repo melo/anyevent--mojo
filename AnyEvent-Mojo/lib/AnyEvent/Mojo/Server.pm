@@ -10,8 +10,6 @@ use AnyEvent::Socket;
 use AnyEvent::Mojo::Server::Connection;
 use IO::Socket qw( SOMAXCONN );
 
-our $VERSION = '0.1';
-
 __PACKAGE__->attr('port',         chained => 1, default => 3000);
 __PACKAGE__->attr('host',         chained => 1);
 __PACKAGE__->attr('listen_queue_size',
@@ -121,12 +119,6 @@ __END__
 =head1 NAME
 
 AnyEvent::Mojo::Server - Run Mojo apps using AnyEvent framework
-
-
-
-=head1 VERSION
-
-Version 0.1
 
 
 
@@ -328,3 +320,4 @@ Copyright 2008 Pedro Melo.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
+

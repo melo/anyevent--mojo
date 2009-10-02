@@ -6,8 +6,6 @@ use base 'Mojo::Base';
 use AnyEvent::Handle;
 use Carp;
 
-our $VERSION = '0.3';
-
 __PACKAGE__->attr('server',    chained => 1, weak => 1);
 __PACKAGE__->attr('sock',      chained => 1);
 __PACKAGE__->attr('peer_host', chained => 1);
@@ -285,12 +283,6 @@ __END__
 =head1 NAME
 
 AnyEvent::Mojo::Server::Connection - An active TCP connection to AnyEvent::Mojo::Server
-
-
-
-=head1 VERSION
-
-Version 0.1
 
 
 
