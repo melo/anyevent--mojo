@@ -3,35 +3,23 @@ package AnyEvent::Mojo::Server;
 use strict;
 use warnings;
 use 5.008;
-use base 'Mojo::Server';
+use parent 'Mojo::Server';
 use Carp qw( croak );
 use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::Mojo::Server::Connection;
 use IO::Socket qw( SOMAXCONN );
 
-__PACKAGE__->attr('port',         chained => 1, default => 3000);
-__PACKAGE__->attr('host',         chained => 1);
-__PACKAGE__->attr('listen_queue_size',
-    chained => 1,
-    default => sub { SOMAXCONN },
-);
-__PACKAGE__->attr('max_keep_alive_requests',
-  chained => 1,
-  default => 100,
-);
-__PACKAGE__->attr('keep_alive_timeout',
-  chained => 1,
-  default => 5,
-);
-__PACKAGE__->attr('request_count', chained => 1, default => 0);
+__PACKAGE__->attr('host');
+__PACKAGE__->attr(port => 3000);
 
-__PACKAGE__->attr('run_guard',    chained => 1);
-__PACKAGE__->attr('listen_guard', chained => 1);
-__PACKAGE__->attr('connection_class',
-    chained => 1,
-    default => 'AnyEvent::Mojo::Server::Connection'
-);
+__PACKAGE__->attr(listen_queue_size => sub { SOMAXCONN });
+__PACKAGE__->attr(max_keep_alive_requests => 100);
+__PACKAGE__->attr(keep_alive_timeout => 5);
+__PACKAGE__->attr(request_count => 0);
+
+__PACKAGE__->attr([qw( run_guard listen_guard)]);
+__PACKAGE__->attr(connection_class => 'AnyEvent::Mojo::Server::Connection');
 
 
 sub listen {
@@ -50,8 +38,7 @@ sub listen {
         return;
       }
       
-      my $conn_class = $self->connection_class;
-      $conn_class->new(
+      $self->connection_class->new(
         sock      => $sock,
         peer_host => $peer_host,
         peer_port => $peer_port,
@@ -62,7 +49,8 @@ sub listen {
     
     # Setup listen queue size, record our hostname and port
     sub {
-      $self->host($_[1])->port($_[2]);
+      $self->host($_[1]);
+      $self->port($_[2]);
       
       return $self->listen_queue_size;
     }

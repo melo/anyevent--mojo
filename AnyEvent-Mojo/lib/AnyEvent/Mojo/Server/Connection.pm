@@ -2,21 +2,24 @@ package AnyEvent::Mojo::Server::Connection;
 
 use strict;
 use warnings;
-use base 'Mojo::Base';
+use parent 'Mojo::Base';
 use AnyEvent::Handle;
+use Scalar::Util qw( weaken );
 use Carp;
 
-__PACKAGE__->attr('server',    chained => 1, weak => 1);
-__PACKAGE__->attr('sock',      chained => 1);
-__PACKAGE__->attr('peer_host', chained => 1);
-__PACKAGE__->attr('peer_port', chained => 1);
-__PACKAGE__->attr('timeout',   chained => 1, default => 5);
+__PACKAGE__->attr([qw( server sock peer_host peer_port tx handle )]);
+__PACKAGE__->attr(timeout => 5);
+__PACKAGE__->attr(request_count => 0);
 
-__PACKAGE__->attr('request_count', chained => 1, default => 0);
 
-__PACKAGE__->attr('tx',        chained => 1);
-__PACKAGE__->attr('handle',    chained => 1);
+sub new {
+  my $class = shift;
+  my $self = $class->SUPER::new(@_);
 
+  weaken($self->{server});
+
+  return $self;
+}
 
 sub run {
   my $self = shift;
