@@ -1,5 +1,8 @@
 Revision history for AnyEvent-Mojo
 
+0.8001 Sun Oct  4 14:12:23 UTC 2009
+         - Fixed RT #46595 (reported by JWRIGHT)
+         
 0.8    Sun Oct  4 14:08:49 UTC 2009
          - Rewrote Connection to support latest Mojo with Pipeline support
          - Move all AnyEvent stuff to server, Connection is AnyEvent-free
