@@ -28,7 +28,7 @@ cmp_deeply($server->banner_called, [ '0.0.0.0', $new_port ]);
 
 # GET the server
 my $timer; $timer = AnyEvent->timer( after => .5, cb => sub {
-  http_get("http://0.0.0.0:$new_port/", sub {
+  http_get("http://127.0.0.1:$new_port/", sub {
     my ($content) = @_;
     
     ok($content, 'Got some content back');
