@@ -1,5 +1,11 @@
 Revision history for AnyEvent-Mojo
 
+0.8    Sun Oct  4 14:08:49 UTC 2009
+         - Rewrote Connection to support latest Mojo with Pipeline support
+         - Move all AnyEvent stuff to server, Connection is AnyEvent-free
+         - resume() method is disabled for now: need to workaround Mojo
+         - started using Dist::Zilla to manage this distribution
+
 0.6002 Tue Nov 18 16:52:52 WET 2008
          - D'oh: fix pause/resume and timeouts
 
