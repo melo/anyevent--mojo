@@ -19,7 +19,6 @@ __PACKAGE__->attr(request_count => 0);
 sub close {
   my ($self, $type, $mesg) = @_;
 
-  # print STDERR "## [close]: closing time '$type', '".($mesg || '<no message>')."' $self\n";
   $self->pipeline(undef);
   $self->write_mode_cb(undef);
   $self->server(undef);
@@ -45,10 +44,8 @@ sub pause {
     unless $tx && $tx->is_state('handle_request');
   
   my ($tx_state, $tx_req_state) = ($tx->state, $tx->req->state);
-  # print STDERR "## [pause]: before state chgs, p '".$p->state."', tx '".$tx->state."' $self\n";
   $tx->state('paused');
   $tx->req->state('paused');
-  # print STDERR "## [pause]: after state chgs, p '".$p->state."', tx '".$tx->state."' $self\n";
   
   return sub { $self->_resume($tx_state, $tx_req_state) };
 }
@@ -64,13 +61,10 @@ sub _resume {
 
   return unless $tx && $tx->is_state('paused');
 
-  # print STDERR "## [resume]: before state chgs, p '".$p->state."', tx '".$tx->state."' $self\n";
   $tx->req->state($tx_state);
   $tx->state($tx_state);
 
-  # print STDERR "## [resume]: before server_handled, p '".$p->state."', tx '".$tx->state."' $self\n";
   $p->server_handled;
-  # print STDERR "## [resume]: after server_handled, p '".$p->state."', tx '".$tx->state."' $self\n";
   $p->server_spin;
   $self->_check_for_writters;
   
@@ -89,43 +83,32 @@ sub _on_read {
   # Make sure we have a pipeline
   $p = $self->_mk_pipeline unless $p;
 
-  # print STDERR longmess("## NO PIPE? ") unless $p;  
   my $tx = $p->server_tx;
   while ($buf) {
-    # print STDERR "## [spin]: buf size (".length($buf).") '$buf'\n";
     # Need a new transaction?
     unless ($tx) {
       $tx = $srv->build_tx_cb->($srv);
       $p->server_accept($tx);
     }
-    # print STDERR "## [spin]: after server_accept, p '".$p->state."', tx '".$tx->state."'\n";
 
     $p->server_read($buf);
-    # print STDERR "## [spin]: after server_read, p '".$p->state."', tx '".$tx->state."'\n";
     
     if ($p->is_state('handle_continue')) {
       $srv->continue_handler_cb->($srv, $p->server_tx);
       $p->server_handled;
-      # print STDERR "## [spin]: after continue_handler_cb, p '".$p->state."', tx '".$tx->state."'\n";
     }
 
     if ($p->is_state('handle_request')) {
       my $tx = $p->server_tx;
-      # print STDERR "## [spin]: before handler_cb, p '".$p->state."', tx '".$tx->state."'\n";
       
       $srv->handler_cb->($srv, $tx);
-      # print STDERR "## [spin]: after handler_cb, p '".$p->state."', tx '".$tx->state."'\n";
       $p->server_handled unless $tx->state eq 'paused';
     }
     
-    # print STDERR "## [spin]: before server_spin, p '".$p->state."', tx '".$tx->state."'\n";
     $p->server_spin;
-    # print STDERR "## [spin]: after server_spin, p '".$p->state."', tx '".$tx->state."'\n";
     
     $buf = $p->server_leftovers;
     $tx = undef if $buf;
-    # print STDERR "## [spin]: NEW buf size (".length($buf).") '$buf'\n" if $buf;
-    # print STDERR "## [spin]: no leftovers, tx '".$tx->state."'\n" unless $buf;
   }
   
   $self->_check_for_writters;
@@ -134,11 +117,9 @@ sub _on_read {
 
 sub _on_write {
   my ($self, $write_cb) = @_;
-  # print STDERR "## [on_write] Called\n";
+
   return unless my $p = $self->pipeline;
-  # print STDERR "## [on_write] Have a pipe\n";
   return unless my $chunk = $p->server_get_chunk;
-  # print STDERR "## [on_write] Have a chunk\n";
 
   ## FIXME: The order of is wrong. We should call server_written with
   ## the output of $write_cb->(chunk)
@@ -153,15 +134,9 @@ sub _on_write {
   # AnyEvent that delays the write until the next I/O loop iteraction.
   my $written = length($chunk);
   $p->server_written($written);
-  # print STDERR "## [on_write] Before spin, p '".$p->state."\n";
   $self->_cleanup;
-  # print STDERR "## [on_write] After spin, p '".$p->state."\n";
   
-  
-  # print STDERR Carp::longmess("## [on_write] WRITE CHUNK: ($written) '$chunk', ");
   $write_cb->($chunk);
-  # print STDERR "## [on_write] WROTE $written, p '".$p->state."\n";
-  # print STDERR "## [on_write] WRITTING MORE? ".($p->server_is_writing? 'yes' : 'no')."\n\n";
 }
 
 sub _on_error {
@@ -181,7 +156,6 @@ sub _on_timeout {
   my $p = $self->pipeline;
   my $tx = $p && $p->server_tx;
 
-  # print STDERR "## [on_timeout] !!! TIMEOUT $tx (".($tx? $tx->state:'<no tx>').") $p (".($p? $p->state:'<no pipeline>').") !!!\n";
   return $self->close('timeout') unless $tx && $tx->state eq 'paused';
   return;
 }
@@ -194,7 +168,6 @@ sub _check_for_writters {
   my $self = shift;
   my $p = $self->pipeline;
   
-  # print STDERR $p->server_is_writing? "## [spin]: ++ENABLE++ write\n":"## [spin]: ++DISABLE++ write\n";
   ## Start the writer if we are ready for it
   $self->write_mode_cb->($p->server_is_writing);
 }
@@ -204,18 +177,11 @@ sub _cleanup {
   my $p = $self->pipeline;
   return unless $p;
   
-  #my $tx = $p->server_tx;
-  # print STDERR Carp::longmess("## [spin_cleanup]: before spin, p '".$p->state."', tx '".($tx? $tx->state : '<no tx>')."',");
-
   $p->server_spin;
 
-  # print STDERR Carp::longmess("## [spin_cleanup]: after spin, p '".$p->state."', tx '".($tx? $tx->state : '<no tx>')."',");
-
   if ($p->is_finished) {
-    # print STDERR "## [spin]: destroy pipeline\n";
     $self->pipeline(undef);
     $self->close('no-keep-alive') unless $p->keep_alive;
-    # print STDERR "## [spin]: but keep connection alive\n" if $p->keep_alive;
   }
 }
 
