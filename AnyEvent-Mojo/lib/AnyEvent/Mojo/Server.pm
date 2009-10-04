@@ -7,6 +7,7 @@ use parent 'Mojo::Server';
 use Carp qw( croak );
 use AnyEvent;
 use AnyEvent::Socket;
+use AnyEvent::Handle;
 use AnyEvent::Mojo::Server::Connection;
 use IO::Socket qw( SOMAXCONN );
 
@@ -29,24 +30,7 @@ sub listen {
   return if $self->listen_guard;
   
   my $guard = tcp_server($self->host, $self->port,
-    # on connection
-    sub {
-      my ($sock, $peer_host, $peer_port) = @_;
-      
-      if (!$sock) {
-        $self->log("Connect failed: $!");
-        return;
-      }
-      
-      $self->connection_class->new(
-        sock      => $sock,
-        peer_host => $peer_host,
-        peer_port => $peer_port,
-        server    => $self,
-        timeout   => $self->keep_alive_timeout,
-      )->run;
-    },
-    
+    sub { $self->_on_connect(@_) },
     # Setup listen queue size, record our hostname and port
     sub {
       $self->host($_[1]);
@@ -58,6 +42,56 @@ sub listen {
   
   $self->listen_guard(sub { $guard = undef });
   $self->startup_banner;
+  
+  return;
+}
+
+sub _on_connect {
+  my ($self, $sock, $remote_address, $remote_port) = @_;
+  
+  if (!$sock) {
+    $self->log("Connect failed: $!");
+    return;
+  }
+  
+  my $con = $self->connection_class->new(
+    local_address  => $self->host,
+    local_port     => $self->port,
+    remote_address => $remote_address,
+    remote_port    => $remote_port,
+    server         => $self,
+  );
+  
+  my $hdl; $hdl = AnyEvent::Handle->new(
+    fh         => $sock,
+    timeout    => $self->keep_alive_timeout,
+
+    on_read    => sub { $con->_on_read(delete $_[0]->{rbuf}) },
+    on_eof     => sub { $con->_on_eof(@_);   $hdl->destroy },
+    on_error   => sub { $con->_on_error(@_); $hdl->destroy },
+    on_timeout => sub { $con->_on_timeout(@_) },
+  );
+  
+  $con->write_mode_cb(sub {
+    my $on = shift;
+    
+    if ($on) {
+      # print STDERR "## [handle] SET ON DRAIN\n";
+      $hdl->on_drain(sub {
+        my $h = $_[0];
+        $con->_on_write(sub {
+          # print STDERR "## [handle] PUSH WRITE\n";
+          $h->push_write($_[0]);
+          return length($_[0]);
+        });
+      });
+    }
+    else {
+      # print STDERR "## [handle] Remove on_drain\n";
+      $hdl->on_drain(undef);
+    }
+  });
+  $con->close_sock_cb(sub { $hdl = undef });
   
   return;
 }
@@ -96,6 +130,13 @@ sub stop {
 }
 
 sub startup_banner {}
+
+#######
+# Stats
+
+sub _inc_request_count {
+  return ++$_[0]->{request_count}
+}
 
 
 42; # End of AnyEvent::Mojo::Server
