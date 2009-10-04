@@ -10,8 +10,6 @@ eval { require AnyEvent::HTTP; AnyEvent::HTTP->import };
 plan skip_all => "Functional tests require the AnyEvent::HTTP module: $@"
   if $@;
 
-plan tests => 11;
-
 my $port = 4000 + $$ % 10000;
 my $server; $server = mojo_server(undef, $port, sub {
   my (undef, $tx) = @_;
@@ -19,7 +17,7 @@ my $server; $server = mojo_server(undef, $port, sub {
   
   $res->code(200);
   $res->headers->content_type('text/plain');
-  $res->body('Mary had a little lamb... but she was hundry... Lamb chops for dinner!');
+  $res->body('Mary had a little lamb... but she was hungry... Lamb chops for dinner!');
   
   return;
 });
@@ -32,16 +30,17 @@ my $t; $t = AnyEvent->timer( after => .5, cb => sub {
   http_get( "http://127.0.0.1:$port/", sub {
     my ($content) = @_;
     
-    ok($content);
-    like($content, qr/Lamb chops for dinner/);
+    ok($content, 'got content back');
+    like($content, qr/Lamb chops for dinner/, '... and it is the right content');
     
     $server->stop;
   });
 });
 
 $server->run;
-pass("Ended properly");
+pass("Server stoped properly");
 
+## Test forced host
 $server = mojo_server({
   host => '127.0.0.1',
   port => $port,
@@ -51,3 +50,5 @@ ok($server);
 is($server->host, '127.0.0.1');
 is($server->port, $port);
 is(ref($server->handler_cb), 'CODE');
+
+done_testing();

@@ -2,54 +2,32 @@ package AnyEvent::Mojo::Server::Connection;
 
 use strict;
 use warnings;
-use base 'Mojo::Base';
-use AnyEvent::Handle;
+use parent 'Mojo::Base';
+use Mojo::Transaction::Pipeline;
 use Carp;
 
-our $VERSION = '0.3';
+use Data::Dump qw(pp);
 
-__PACKAGE__->attr('server',    chained => 1, weak => 1);
-__PACKAGE__->attr('sock',      chained => 1);
-__PACKAGE__->attr('peer_host', chained => 1);
-__PACKAGE__->attr('peer_port', chained => 1);
-__PACKAGE__->attr('timeout',   chained => 1, default => 5);
-
-__PACKAGE__->attr('request_count', chained => 1, default => 0);
-
-__PACKAGE__->attr('tx',        chained => 1);
-__PACKAGE__->attr('handle',    chained => 1);
+__PACKAGE__->attr([qw( server pipeline write_mode_cb close_sock_cb )]);
+__PACKAGE__->attr([qw( remote_address remote_port local_address local_port )]);
+__PACKAGE__->attr(request_count => 0);
 
 
-sub run {
-  my $self = shift;
-  my $srv  = $self->server;
-  
-  # Create out magic handler_cb
-  my $handle = AnyEvent::Handle->new(
-    fh         => $self->sock,
-    timeout    => $self->timeout,
-    on_eof     => sub { $self->close('eof')     },
-    on_error   => sub { $self->close('error')   },
-    on_timeout => sub { $self->_on_timeout },
-  );
-  $self->handle($handle);
-
-  $self->_ready_for_transaction;
-  
-  return;
-}
+##############################
+# Close the current connection
 
 sub close {
-  my ($self) = @_;
-  
-  $self->tx(undef)->handle(undef);
-}
+  my ($self, $type, $mesg) = @_;
 
-sub _on_timeout {
-  my $self = shift;
-  my $tx = $self->tx;
+  $self->pipeline(undef);
+  $self->write_mode_cb(undef);
+  $self->server(undef);
 
-  return $self->close('timeout') unless $tx && $tx->state eq 'paused';
+  ## Make sure the socket is closed
+  my $cb = $self->close_sock_cb;
+  $self->close_sock_cb(undef);
+  $cb->();
+
   return;
 }
 
@@ -59,222 +37,182 @@ sub _on_timeout {
 
 sub pause {
   my ($self) = @_;
-  my $tx = $self->tx;
+  my $p = $self->pipeline;
+  my $tx = $p && $p->server_tx;
   
-  croak("pause() only works on tx's in the 'write' state")
-    unless $tx && $tx->is_state('write');
+  croak("pause() only works on tx's in the 'handle_request' state")
+    unless $tx && $tx->is_state('handle_request');
   
+  my ($tx_state, $tx_req_state) = ($tx->state, $tx->req->state);
   $tx->state('paused');
+  $tx->req->state('paused');
   
-  return sub { $self->resume };
+  return sub { $self->_resume($tx_state, $tx_req_state) };
 }
 
 sub resume {
+  Carp::croak('resume() not available, use the cb that pause() gave you, ')
+}
+
+sub _resume {
+  my ($self, $tx_state, $tx_req_state) = @_;
+  my $p = $self->pipeline;
+  my $tx = $p && $p->server_tx;
+
+  return unless $tx && $tx->is_state('paused');
+
+  $tx->req->state($tx_state);
+  $tx->state($tx_state);
+
+  $p->server_handled;
+  $p->server_spin;
+  $self->_check_for_writters;
+  
+  return;
+}
+
+
+###############
+# _on_ handlers
+
+sub _on_read {
+  my ($self, $buf) = @_;
+  my $p = $self->pipeline;
+  my $srv = $self->server;
+
+  # Make sure we have a pipeline
+  $p = $self->_mk_pipeline unless $p;
+
+  my $tx = $p->server_tx;
+  while ($buf) {
+    # Need a new transaction?
+    unless ($tx) {
+      $tx = $srv->build_tx_cb->($srv);
+      $p->server_accept($tx);
+    }
+
+    $p->server_read($buf);
+    
+    if ($p->is_state('handle_continue')) {
+      $srv->continue_handler_cb->($srv, $p->server_tx);
+      $p->server_handled;
+    }
+
+    if ($p->is_state('handle_request')) {
+      my $tx = $p->server_tx;
+      
+      $srv->handler_cb->($srv, $tx);
+      $p->server_handled unless $tx->state eq 'paused';
+    }
+    
+    $p->server_spin;
+    
+    $buf = $p->server_leftovers;
+    $tx = undef if $buf;
+  }
+  
+  $self->_check_for_writters;
+  $self->_cleanup;
+}
+
+sub _on_write {
+  my ($self, $write_cb) = @_;
+
+  return unless my $p = $self->pipeline;
+  return unless my $chunk = $p->server_get_chunk;
+
+  ## FIXME: The order of is wrong. We should call server_written with
+  ## the output of $write_cb->(chunk)
+  # but the problem is that the AnyEvent impl of AnyEvent::Handle
+  # recursivelly calls us again when we call $write_cb. So we need to
+  # move the state machine before we call it. Hence the call to
+  # $p->server_spin.
+  #
+  # I don't have a better solution right now. One possibility would be
+  # not to use AnyEvent::Handle, but that would mean to rewrite a lot of
+  # tricky code. Another would be to use the autocork feature of
+  # AnyEvent that delays the write until the next I/O loop iteraction.
+  my $written = length($chunk);
+  $p->server_written($written);
+  $self->_cleanup;
+  
+  $write_cb->($chunk);
+}
+
+sub _on_error {
+  my ($self, undef, $mesg) = @_;
+  
+  $self->close('on_error', $mesg)
+}
+
+sub _on_eof {
   my ($self) = @_;
-  my $tx = $self->tx;
-
-  croak("resume() only works on tx's in the 'paused' state")
-    unless $tx && $tx->is_state('paused');
   
-  $tx->state('write');
-  $self->_write;
-  
-  return;
+  $self->close('on_error')
 }
 
-
-######################
-# Transaction handling
-
-sub _ready_for_transaction {
+sub _on_timeout {
   my $self = shift;
-  
-  $self->handle->push_read(sub { $self->_read(@_) });
-  
-  return;
-}
+  my $p = $self->pipeline;
+  my $tx = $p && $p->server_tx;
 
-sub _current_transaction {
-  my $self = shift;
-  my $tx   = $self->tx;
-  
-  # Initial request, prepare transaction
-  if (!$tx) {
-    my $srv  = $self->server;
-    $tx = $srv->build_tx_cb->($srv)->state('read');
-    $self->tx($tx);
-    $tx->connection($self);
-  }
-  
-  return $tx;
-}
-
-sub _last_transaction {
-  my $self = shift;
-  
-  $self->tx->res->headers->connection('Close');
-  
-  return;
-}
-
-sub _end_transaction {
-  my ($self) = @_;
-  my $handle = $self->handle;
-  my $tx     = $self->tx;
-  my $ka     = $tx->keep_alive;  
-
-  # Destroy current tx
-  $self->tx(undef);
-
-  if ($ka) {
-    $self->_ready_for_transaction;
-  }
-  else {
-    $self->close('no-keep-alive');
-  }
-  
+  return $self->close('timeout') unless $tx && $tx->state eq 'paused';
   return;
 }
 
 
 ##############
-# Read request
+# Spin the web
 
-sub _read {
-  my ($self, $handle) = @_;
-
-  return unless defined $handle->{rbuf};
-
-  my $tx  = $self->_current_transaction;
-  my $req = $tx->req;
-  $req->parse(delete $handle->{rbuf});
-
-  my $done = $req->is_state(qw/done error/);
-  # FIXME: we should take care of error differently
-  if ($done) {
-    my $srv = $self->server;
-
-    # Check to see if this is our last request
-    $srv->request_count(($srv->request_count || 0) + 1);
-    my $max_keep_alive_requests = $srv->max_keep_alive_requests;
-    my $count = ($self->request_count || 0) + 1;
-    $self->request_count($count);
-
-    if ($max_keep_alive_requests && $count >= $max_keep_alive_requests) {
-      $self->_last_transaction('max-keep-alive');
-    }
-    
-    $tx->state('write');
-    $srv->handler_cb->($srv, $tx);
-    
-    $self->_write if $tx->is_state('write');
-  }
+sub _check_for_writters {
+  my $self = shift;
+  my $p = $self->pipeline;
   
-  return $done;
-};
-
-
-################
-# Write response
-
-sub _write {
-  my ($self) = @_;
-
-  $self->handle->on_drain(sub {
-    $self->_write_more;
-  });
+  ## Start the writer if we are ready for it
+  $self->write_mode_cb->($p->server_is_writing);
 }
 
-sub _write_more {
-  my ($self) = @_;
-  my $handle = $self->handle;
-
-  if (my $done = $self->_tx_state_machine_adv) {
-    $handle->on_drain(undef);
-    $self->_end_transaction;
-
-    return;
-  }
+sub _cleanup {
+  my $self = $_[0];
+  my $p = $self->pipeline;
+  return unless $p;
   
-  $handle->push_write($self->_get_next_chunk);
+  $p->server_spin;
+
+  if ($p->is_finished) {
+    $self->pipeline(undef);
+    $self->close('no-keep-alive') unless $p->keep_alive;
+  }
+}
+
+sub _mk_pipeline {
+  my ($self) = @_;
+  
+  my $srv = $self->server;
+  my $p = Mojo::Transaction::Pipeline->new;
+  $p->connection($self);
+  $p->kept_alive(1) if $self->_inc_request_count > 1;
+
+  # Store connection information
+  $p->local_address($self->local_address);
+  $p->local_port($self->local_port);
+  $p->remote_address($self->remote_address);
+  $p->remote_port($self->remote_port);
+  
+  $self->pipeline($p);
+  
+  return $p;
 }
 
 
-sub _tx_state_machine_adv {
-  my ($self) = @_;
-  my $tx   = $self->tx;
-  my $res  = $tx->res;
-  my $done = 0;
-  
-  # Advance Mojo state machine
-  if ($tx->is_state('write')) {
-    $tx->state('write_start_line');
-    $tx->{_to_write} = $res->start_line_length;
-  }
+#######
+# Stats
 
-  # Response start line
-  if ($tx->is_state('write_start_line') && $tx->{_to_write} <= 0) {
-    $tx->state('write_headers');
-
-    # Connection header
-    unless ($res->headers->connection) {
-      if ($tx->keep_alive) {
-        $res->headers->connection('Keep-Alive');
-      }
-      else {
-        $res->headers->connection('Close');
-      }
-    }
-    
-    $tx->{_offset} = 0;
-    $tx->{_to_write} = $res->header_length;
-  }
-
-  # Response headers
-  if ($tx->is_state('write_headers') && $tx->{_to_write} <= 0) {
-    $tx->state('write_body');
-    $tx->{_offset} = 0;
-    $tx->{_to_write} = $res->body_length;
-  }
-
-  # Response body
-  if ($tx->is_state('write_body') && $tx->{_to_write} <= 0) {
-    $done = 1;
-  }
-  
-  return $done;
+sub _inc_request_count {
+  my $self = $_[0];
+  $self->server->_inc_request_count;
+  return ++$self->{request_count}
 }
-
-sub _get_next_chunk {
-  my ($self) = @_;
-  my $tx  = $self->tx;
-  my $res = $tx->res;
-  my $chunk;
-  
-  # Write the next chunk
-  my $offset = $tx->{_offset}   || 0;
-  my $tw     = $tx->{_to_write} || 0;
-  
-  # Body?
-  $chunk = $res->get_body_chunk($offset)
-    if $tx->is_state('write_body');
-  
-  # Headers?
-  $chunk = $res->get_header_chunk($offset)
-    if $tx->is_state('write_headers');
-  
-  # Start line?
-  $chunk = $res->get_start_line_chunk($offset)
-    if $tx->is_state('write_start_line');
-  
-  # The chunk is no longer the responsability of the Tx object
-  my $written = length($chunk);
-  $tx->{_to_write} -= $written;
-  $tx->{_offset}   += $written;
-  
-  return $chunk;
-}
-
 
 42; # End of AnyEvent::Mojo::Server::Connection
 
@@ -285,12 +223,6 @@ __END__
 =head1 NAME
 
 AnyEvent::Mojo::Server::Connection - An active TCP connection to AnyEvent::Mojo::Server
-
-
-
-=head1 VERSION
-
-Version 0.1
 
 
 
@@ -461,7 +393,7 @@ Pedro Melo, C<< <melo at cpan.org> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 Pedro Melo.
+Copyright 2008-2009 Pedro Melo.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
