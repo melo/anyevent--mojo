@@ -130,7 +130,7 @@ Returns a C<AnyEvent::Mojo::Server> object.
 
 =head1 SEE ALSO
 
-L<AnyEvent::Mojo::Server>, L<Mojo, and L<AnyEvent>.
+L<AnyEvent::Mojo::Server>, L<Mojo>, and L<AnyEvent>.
 
 
 
